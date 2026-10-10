@@ -6,16 +6,27 @@ html, body {
   margin: 0;
   padding: 0;
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 100%;
+  height: 100dvh;
+  overflow: hidden !important; /* No page or window scrolling on mobile! */
+  position: fixed;
+  inset: 0;
   font-family: Arial, sans-serif;
   background: #07080f;
   color: #d7dbe5;
-  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  touch-action: pan-x pan-y;
 }
 
 main {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden !important; /* Page stays locked in place, only cards scroll */
+  display: flex;
+  flex-direction: column;
 }
 
 /* ======================== GLOBAL HORIZONTAL (VIRTUAL LANDSCAPE) ======================== */
@@ -25,12 +36,13 @@ main {
     position: fixed !important;
     top: 50% !important;
     left: 50% !important;
-    width: 100vh !important;
-    height: 100vw !important;
+    width: 100dvh !important;
+    height: 100dvw !important;
+    max-width: 100dvh !important;
+    max-height: 100dvw !important;
     transform: translate(-50%, -50%) rotate(90deg) !important;
     transform-origin: center center !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow: hidden !important; /* No window scrolling! Only internal card scroll */
     -webkit-overflow-scrolling: touch !important;
     z-index: 99999 !important;
     background: radial-gradient(circle at 50% 10%, #151833 0%, #0d0f20 60%, #06070e 100%) !important;
@@ -44,8 +56,11 @@ main {
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
-    height: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     transform: none !important;
+    overflow: hidden !important;
   }
 }
 

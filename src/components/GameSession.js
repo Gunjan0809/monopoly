@@ -415,6 +415,14 @@ export default function GameSession({
                   <span className="badge-name">{activeOpenedPlayer?.name}</span>
                   <span className="badge-turn">Turn #{activeOpenedPlayer?.turnOrder || activeOpenedPlayer?.id}</span>
                 </div>
+                <button
+                  type="button"
+                  className="quick-add-bank-btn"
+                  onClick={() => setIsDeedDrawerOpen(true)}
+                  title="Swipe cards from Bank Vault"
+                >
+                  ➕ Add Card ({remainingBankCards.length})
+                </button>
               </div>
 
               {/* Player Summary & Loan Desk Banner */}
@@ -490,7 +498,7 @@ export default function GameSession({
               {/* Owned Deeds Section */}
               <div className="portfolio-deeds-container">
                 <h3 className="section-subtitle">
-                  Owned Deeds &amp; Building Plots ({activePlayerDeeds.length})
+                  Owned Deeds &amp; Building Plots ({activePlayerDeeds.length}) &mdash; Swipe cards horizontally 👉
                 </h3>
 
                 {activePlayerDeeds.length === 0 ? (
@@ -498,8 +506,15 @@ export default function GameSession({
                     <span className="empty-symbol">📜</span>
                     <h4>No Properties Claimed Yet</h4>
                     <p>
-                      Click <strong>&ldquo;➕ Add Card from Bank&rdquo;</strong> above to swipe any deed from the bank vault into {activeOpenedPlayer?.name}&rsquo;s deck!
+                      Click <strong>&ldquo;➕ Add Card from Bank&rdquo;</strong> to swipe any deed from the bank vault into {activeOpenedPlayer?.name}&rsquo;s deck!
                     </p>
+                    <button
+                      type="button"
+                      className="empty-add-action-btn"
+                      onClick={() => setIsDeedDrawerOpen(true)}
+                    >
+                      ✨ Swipe Add Cards from Bank ({remainingBankCards.length} in Vault)
+                    </button>
                   </div>
                 ) : (
                   <div className="deeds-interactive-grid">

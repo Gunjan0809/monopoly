@@ -2,54 +2,59 @@
 
 /* ======================== GAME SESSION ROOT LAYOUT ======================== */
 .game-session-container {
-  min-height: 100vh;
-  padding: 1.25rem 1.5rem 3rem;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding: 0.4rem 0.75rem;
   background: radial-gradient(circle at 50% 10%, #151833 0%, #0d0f20 60%, #06070e 100%);
   color: white;
   font-family: 'Inter', sans-serif;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.35rem;
   box-sizing: border-box;
   width: 100%;
+  overflow: hidden !important; /* Zero page scrolling! All scrolling is strictly for cards */
 }
 
 /* ======================== BANKER HEADER ======================== */
 .banker-header-panel {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.35rem;
   background: linear-gradient(135deg, rgba(79, 172, 254, 0.08), rgba(0, 242, 254, 0.03));
   border: 1px solid rgba(79, 172, 254, 0.25);
-  border-radius: 18px;
-  padding: 1rem 1.5rem;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  padding: 0.35rem 0.75rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .banker-brand-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
 }
 
 .banker-brand-group {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
 }
 
 .banker-menu-btn {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 10px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
   transition: all 0.2s ease;
 }
 
@@ -60,17 +65,18 @@
 
 .banker-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.6rem;
+  font-size: 1.25rem;
   font-weight: 800;
   margin: 0;
   background: linear-gradient(135deg, #ffffff 40%, #4facfe 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  line-height: 1.1;
 }
 
 .banker-subtitle {
-  margin: 0.15rem 0 0;
-  font-size: 0.82rem;
+  margin: 0.1rem 0 0;
+  font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.55);
 }
 
@@ -78,16 +84,18 @@
   background: rgba(0, 242, 254, 0.1);
   border: 1px solid rgba(0, 242, 254, 0.35);
   color: #00f2fe;
-  padding: 0.55rem 1.15rem;
-  border-radius: 12px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 10px;
   cursor: pointer;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-family: 'Outfit', sans-serif;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .landscape-toggle-btn:hover,
@@ -98,34 +106,44 @@
   box-shadow: 0 4px 14px rgba(0, 242, 254, 0.35);
 }
 
-/* Header Live Statistics Pills */
+/* Header Live Statistics Pills (Never wraps, scrolls horizontally if tight) */
 .banker-stats-pills {
   display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
+  gap: 0.45rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.banker-stats-pills::-webkit-scrollbar {
+  display: none;
 }
 
 .stat-pill {
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  padding: 0.25rem 0.6rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .pill-label {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   color: rgba(255, 255, 255, 0.5);
   font-weight: 600;
 }
 
 .pill-val {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.05rem;
+  font-size: 0.9rem;
   font-weight: 800;
   color: #fff;
 }
@@ -155,25 +173,34 @@
   color: #ff9933;
 }
 
-/* Navigation Tabs */
+/* Navigation Tabs (Never wraps, horizontal scrollable) */
 .banker-tab-nav {
   display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
+  gap: 0.45rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 0.85rem;
+  padding-top: 0.3rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.banker-tab-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.75);
-  padding: 0.55rem 1.25rem;
-  border-radius: 10px;
+  padding: 0.3rem 0.8rem;
+  border-radius: 8px;
   font-family: 'Outfit', sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s ease;
 }
 
@@ -190,65 +217,92 @@
 }
 
 /* ======================== CENTER STAGE: ALL PLAYER CARDS ======================== */
+.players-tab-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .players-center-stage {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.6rem;
   width: 100%;
-  margin: 1rem 0;
+  margin: 0;
+  overflow: hidden;
 }
 
 .stage-header {
+  flex-shrink: 0;
   text-align: center;
+  margin-bottom: 0.2rem;
 }
 
 .stage-title {
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-size: clamp(1.1rem, 2.2vw, 1.45rem);
   font-weight: 800;
   margin: 0;
   background: linear-gradient(135deg, #ffffff 40%, #4facfe 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  line-height: 1.15;
 }
 
 .stage-sub {
-  margin: 0.35rem 0 0;
-  font-size: 0.92rem;
+  margin: 0.1rem 0 0;
+  font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* Centered Horizontal Grid of Player Cards */
+/* Centered Horizontal Grid of Player Cards (Cards only scroll horizontally) */
 .players-cards-middle-grid {
+  flex: 1;
+  min-height: 0;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: stretch;
-  flex-wrap: wrap;
-  gap: 1.5rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 1rem;
   width: 100%;
-  max-width: 1300px;
+  padding: 0.2rem 0.5rem 0.5rem;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 
 .player-middle-card {
-  width: 270px;
+  width: min(250px, 76vw);
+  min-width: min(220px, 70vw);
+  max-width: 260px;
+  height: 100%;
+  max-height: 100%;
   background: linear-gradient(160deg, rgba(25, 28, 55, 0.85) 0%, rgba(14, 16, 35, 0.95) 100%);
   border: 1.5px solid rgba(79, 172, 254, 0.25);
-  border-radius: 20px;
-  padding: 1.5rem 1.25rem 1.25rem;
+  border-radius: 16px;
+  padding: 0.75rem 0.9rem;
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  justify-content: space-between;
+  gap: 0.45rem;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s ease;
   backdrop-filter: blur(14px);
+  flex-shrink: 0;
+  scroll-snap-align: center;
 }
 
 .player-middle-card:hover {
-  transform: translateY(-8px) scale(1.02);
+  transform: translateY(-4px) scale(1.02);
   border-color: #00f2fe;
   box-shadow: 0 16px 45px rgba(0, 242, 254, 0.25), 0 0 30px rgba(79, 172, 254, 0.15);
 }
@@ -389,20 +443,24 @@
 
 /* ======================== OPENED PLAYER PORTFOLIO ======================== */
 .opened-player-portfolio {
-  border-radius: 20px;
-  padding: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  border-radius: 14px;
+  padding: 0.4rem 0.7rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.35rem;
+  overflow: hidden;
 }
 
 .portfolio-top-bar {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding-bottom: 1rem;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  padding-bottom: 0.25rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -410,11 +468,12 @@
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: white;
-  padding: 0.55rem 1.15rem;
-  border-radius: 12px;
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.2s ease;
 }
 
@@ -426,62 +485,91 @@
 .portfolio-player-badge {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.4rem;
   background: rgba(0, 0, 0, 0.3);
-  padding: 0.4rem 0.9rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 100px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
 }
 
 .badge-token {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
 }
 
 .badge-name {
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
 }
 
 .badge-turn {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: #ffd700;
   font-weight: 700;
 }
 
+.quick-add-bank-btn {
+  background: linear-gradient(135deg, #00f2fe, #4facfe);
+  color: #090a14;
+  border: none;
+  padding: 0.3rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.2s ease;
+}
+
+.quick-add-bank-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 14px rgba(0, 242, 254, 0.4);
+}
+
 /* Player Hero Banner with Loan Desk */
 .player-hero-banner {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 1.5rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 0.5rem;
   background: rgba(0, 0, 0, 0.25);
-  border-radius: 18px;
-  padding: 1.25rem 1.5rem;
+  border-radius: 10px;
+  padding: 0.35rem 0.65rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  -webkit-overflow-scrolling: touch;
+}
+
+.player-hero-banner::-webkit-scrollbar {
+  display: none;
 }
 
 .hero-left {
   display: flex;
   align-items: center;
-  gap: 1.1rem;
+  gap: 0.55rem;
+  flex-shrink: 0;
 }
 
 .hero-token-display {
-  font-size: 3rem;
+  font-size: 1.7rem;
   filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
 }
 
 .hero-player-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.6rem;
+  font-size: 1.05rem;
   font-weight: 800;
   margin: 0;
+  line-height: 1.1;
 }
 
 .hero-player-cash {
-  margin: 0.2rem 0 0;
-  font-size: 0.88rem;
+  margin: 0.05rem 0 0;
+  font-size: 0.74rem;
   color: rgba(255, 255, 255, 0.7);
 }
 
@@ -493,44 +581,46 @@
 .bank-loan-control-box {
   background: linear-gradient(135deg, rgba(255, 153, 51, 0.12), rgba(255, 82, 82, 0.06));
   border: 1px solid rgba(255, 153, 51, 0.35);
-  border-radius: 14px;
-  padding: 0.85rem 1.15rem;
+  border-radius: 10px;
+  padding: 0.35rem 0.65rem;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 0.6rem;
+  flex-shrink: 0;
 }
 
 .loan-box-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.1rem;
 }
 
 .loan-title {
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   color: #ffd700;
+  white-space: nowrap;
 }
 
 .loan-rule-note {
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
 }
 
 .loan-box-content {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .loan-status-text {
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .loan-due-warning {
@@ -543,8 +633,8 @@
 
 .loan-actions-group {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex-shrink: 0;
 }
 
 .take-loan-btn {
@@ -552,10 +642,11 @@
   color: #090a14;
   border: none;
   font-weight: 800;
-  font-size: 0.82rem;
-  padding: 0.45rem 0.9rem;
-  border-radius: 8px;
+  font-size: 0.74rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
   cursor: pointer;
+  white-space: nowrap;
   transition: transform 0.2s ease;
 }
 
@@ -568,10 +659,11 @@
   color: #090a14;
   border: none;
   font-weight: 800;
-  font-size: 0.82rem;
-  padding: 0.45rem 0.9rem;
-  border-radius: 8px;
+  font-size: 0.74rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
   cursor: pointer;
+  white-space: nowrap;
   transition: transform 0.2s ease;
 }
 
@@ -583,94 +675,139 @@
 .add-deed-action-card {
   background: linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(79, 172, 254, 0.06));
   border: 1.5px dashed rgba(0, 242, 254, 0.5);
-  border-radius: 14px;
-  padding: 0.85rem 1.25rem;
+  border-radius: 10px;
+  padding: 0.35rem 0.65rem;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.2rem;
+  gap: 0.4rem;
   cursor: pointer;
   transition: all 0.25s ease;
   user-select: none;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .add-deed-action-card:hover {
   background: linear-gradient(135deg, rgba(0, 242, 254, 0.25), rgba(79, 172, 254, 0.15));
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 242, 254, 0.3);
+  box-shadow: 0 6px 18px rgba(0, 242, 254, 0.3);
 }
 
 .add-icon-glow {
-  font-size: 1.4rem;
+  font-size: 1.1rem;
 }
 
 .add-card-label {
   font-family: 'Outfit', sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   font-weight: 800;
   color: #00f2fe;
 }
 
 .add-card-sub {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: rgba(255, 255, 255, 0.6);
 }
 
 /* Portfolio Deeds List */
+.portfolio-deeds-container {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+}
+
 .section-subtitle {
+  flex-shrink: 0;
   font-family: 'Outfit', sans-serif;
-  font-size: 1.2rem;
+  font-size: 0.88rem;
   font-weight: 800;
-  margin: 0 0 1rem;
+  margin: 0.1rem 0 0.25rem;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .empty-deeds-notice {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 3rem 1rem;
+  padding: 1rem;
   color: rgba(255, 255, 255, 0.55);
 }
 
 .empty-symbol {
-  font-size: 3rem;
+  font-size: 2.2rem;
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
   opacity: 0.5;
 }
 
 .empty-deeds-notice h4 {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.3rem;
-  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+  margin: 0 0 0.25rem;
   color: #fff;
 }
 
 .empty-deeds-notice p {
-  max-width: 460px;
-  margin: 0 auto;
-  line-height: 1.5;
+  max-width: 420px;
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
 }
 
-/* Deeds Grid */
+.empty-add-action-btn {
+  background: linear-gradient(135deg, #00f2fe, #4facfe);
+  color: #090a14;
+  border: none;
+  padding: 0.45rem 1rem;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 242, 254, 0.35);
+  transition: transform 0.2s ease;
+}
+
+.empty-add-action-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Deeds Grid (Cards only scroll horizontally) */
 .deeds-interactive-grid {
+  flex: 1;
+  min-height: 0;
   display: flex;
+  flex-direction: row;
   overflow-x: auto;
-  gap: 1.25rem;
-  padding-bottom: 1rem;
+  overflow-y: hidden;
+  gap: 0.85rem;
+  padding: 0.15rem 0.35rem 0.45rem;
   scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 
 .game-property-card {
-  min-width: 260px;
-  max-width: 260px;
-  border-radius: 18px;
+  height: 100%;
+  max-height: 100%;
+  min-width: min(250px, 76vw);
+  max-width: min(270px, 80vw);
+  border-radius: 16px;
   overflow: hidden;
-  background: rgba(15, 17, 34, 0.9);
+  background: rgba(15, 17, 34, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  scroll-snap-align: start;
+  scroll-snap-align: center;
   transition: transform 0.25s ease;
 }
 
@@ -680,9 +817,10 @@
 }
 
 .card-color-band {
-  padding: 1.25rem 1rem 0.85rem;
+  padding: 0.6rem 0.85rem 0.45rem;
   text-align: center;
   position: relative;
+  flex-shrink: 0;
 }
 
 .deed-release-btn {
@@ -708,30 +846,35 @@
 .card-name {
   font-family: 'Outfit', sans-serif;
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 800;
   text-transform: uppercase;
   color: #fff;
   letter-spacing: 0.5px;
+  line-height: 1.15;
 }
 
 .card-badge {
   display: inline-block;
-  margin-top: 0.35rem;
+  margin-top: 0.2rem;
   font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 2px;
   color: rgba(255, 255, 255, 0.65);
   background: rgba(0, 0, 0, 0.25);
-  padding: 0.15rem 0.5rem;
+  padding: 0.12rem 0.45rem;
   border-radius: 100px;
 }
 
 .card-details {
-  padding: 0.85rem 1rem 1rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.45rem 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .live-rent-banner {
@@ -949,49 +1092,59 @@
 
 /* ======================== TAB 2: MASTER LEDGER ======================== */
 .ledger-full-layout {
-  border-radius: 18px;
-  padding: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 14px;
+  padding: 0.5rem 0.75rem;
 }
 
 .ledger-header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.35rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .ledger-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.5rem;
+  font-size: 1.15rem;
   font-weight: 800;
   margin: 0;
+  line-height: 1.15;
 }
 
 .ledger-sub {
-  margin: 0.2rem 0 0;
-  font-size: 0.82rem;
+  margin: 0.1rem 0 0;
+  font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.55);
 }
 
 .ledger-filter-row {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .ledger-filter-btn {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.75);
-  padding: 0.45rem 1rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 100px;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.2s ease;
 }
 
@@ -1003,7 +1156,9 @@
 }
 
 .ledger-table-wrap {
-  overflow-x: auto;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1108,49 +1263,78 @@
 
 /* ======================== TAB 3: BANK VAULT ======================== */
 .bank-vault-layout {
-  border-radius: 18px;
-  padding: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 14px;
+  padding: 0.5rem 0.75rem;
 }
 
 .vault-header {
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.85rem;
+  flex-shrink: 0;
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.3rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .vault-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.5rem;
+  font-size: 1.15rem;
   font-weight: 800;
   margin: 0;
+  line-height: 1.15;
 }
 
 .vault-sub {
-  margin: 0.2rem 0 0;
-  font-size: 0.82rem;
+  margin: 0.1rem 0 0;
+  font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.55);
 }
 
 .empty-vault-box {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 3rem 1rem;
+  padding: 1.5rem 1rem;
 }
 
 .empty-vault-box span {
-  font-size: 3rem;
+  font-size: 2.5rem;
 }
 
 .vault-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 1.1rem;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 0.85rem;
+  padding-bottom: 0.4rem;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 }
 
 .vault-card-item {
+  height: 100%;
+  max-height: 100%;
+  min-width: min(220px, 70vw);
+  max-width: min(240px, 75vw);
+  flex-shrink: 0;
+  scroll-snap-align: center;
   background: rgba(15, 17, 34, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   transition: transform 0.2s ease;
 }
 
@@ -1376,19 +1560,22 @@
 
 /* ======================== MOBILE & HORIZONTAL SCREEN ADAPTATIONS ======================== */
 
-/* When Global Horizontal Mode is enabled */
+/* 1. Global Horizontal Mode (Rotated laptop mode on mobile) */
 .app-force-horizontal .game-session-container {
-  padding: 0.75rem 1.25rem 2rem !important;
-  gap: 0.85rem !important;
+  padding: 0.4rem 0.75rem !important;
+  gap: 0.35rem !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
 }
 
 .app-force-horizontal .banker-header-panel {
-  padding: 0.65rem 1.15rem !important;
-  gap: 0.6rem !important;
+  padding: 0.35rem 0.75rem !important;
+  gap: 0.3rem !important;
 }
 
 .app-force-horizontal .banker-title {
-  font-size: 1.35rem !important;
+  font-size: 1.15rem !important;
 }
 
 .app-force-horizontal .banker-subtitle {
@@ -1399,81 +1586,416 @@
   flex-direction: row !important;
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
+  overflow-y: hidden !important;
   justify-content: flex-start !important;
-  padding-bottom: 0.75rem !important;
+  align-items: stretch !important;
+  padding: 0.2rem 0.5rem 0.5rem !important;
   scroll-snap-type: x mandatory !important;
 }
 
 .app-force-horizontal .player-middle-card {
-  min-width: 250px !important;
+  min-width: 230px !important;
   max-width: 250px !important;
+  height: 100% !important;
+  max-height: 100% !important;
   flex-shrink: 0 !important;
-  scroll-snap-align: start !important;
-  padding: 1rem !important;
+  scroll-snap-align: center !important;
+  padding: 0.75rem !important;
 }
 
+.app-force-horizontal .player-hero-banner {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  padding: 0.3rem 0.6rem !important;
+  gap: 0.5rem !important;
+}
+
+.app-force-horizontal .deeds-interactive-grid {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  display: flex !important;
+  flex-direction: row !important;
+  padding-bottom: 0.4rem !important;
+}
+
+.app-force-horizontal .game-property-card {
+  min-width: 230px !important;
+  max-width: 250px !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+/* 2. Standard Mobile Screen (Portrait or small width <= 850px) */
 @media (max-width: 850px) {
   .game-session-container {
-    padding: 0.85rem 1rem 2rem;
-    gap: 1rem;
+    padding: 0.35rem 0.55rem !important;
+    gap: 0.3rem !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important; /* Zero page scrolling! */
   }
 
   .banker-header-panel {
-    padding: 0.85rem 1rem;
-    gap: 0.75rem;
+    padding: 0.3rem 0.55rem !important;
+    gap: 0.25rem !important;
+    border-radius: 10px !important;
   }
 
   .banker-title {
-    font-size: 1.3rem;
+    font-size: 1.1rem !important;
   }
 
   .banker-subtitle {
-    display: none;
+    display: none !important;
+  }
+
+  .banker-menu-btn {
+    padding: 0.25rem 0.55rem !important;
+    font-size: 0.74rem !important;
+  }
+
+  .landscape-toggle-btn {
+    padding: 0.25rem 0.55rem !important;
+    font-size: 0.74rem !important;
+  }
+
+  .banker-stats-pills {
+    gap: 0.35rem !important;
+    padding-bottom: 1px !important;
+  }
+
+  .stat-pill {
+    padding: 0.2rem 0.45rem !important;
+    border-radius: 6px !important;
+  }
+
+  .pill-label {
+    font-size: 0.62rem !important;
+  }
+
+  .pill-val {
+    font-size: 0.82rem !important;
+  }
+
+  .banker-tab-nav {
+    gap: 0.35rem !important;
+    padding-top: 0.25rem !important;
+  }
+
+  .tab-btn {
+    padding: 0.25rem 0.65rem !important;
+    font-size: 0.76rem !important;
+  }
+
+  /* Stage 1: Player cards middle grid */
+  .stage-header {
+    margin-bottom: 0.15rem !important;
+  }
+
+  .stage-title {
+    font-size: 1.05rem !important;
+  }
+
+  .stage-sub {
+    font-size: 0.68rem !important;
   }
 
   .players-cards-middle-grid {
-    gap: 1rem;
+    flex: 1 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    gap: 0.75rem !important;
+    padding: 0.2rem 0.4rem 0.4rem !important;
+    scroll-snap-type: x mandatory !important;
   }
 
   .player-middle-card {
-    width: min(320px, 92vw);
-    padding: 1.25rem 1rem 1rem;
+    width: min(230px, 74vw) !important;
+    min-width: min(210px, 68vw) !important;
+    max-width: 250px !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    flex-shrink: 0 !important;
+    scroll-snap-align: center !important;
+    padding: 0.65rem 0.8rem !important;
+    gap: 0.35rem !important;
+  }
+
+  .player-big-avatar {
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 14px !important;
+  }
+
+  .avatar-icon {
+    font-size: 1.8rem !important;
+  }
+
+  .player-card-name {
+    font-size: 1.05rem !important;
+  }
+
+  .player-metrics-box {
+    padding: 0.45rem 0.6rem !important;
+    gap: 0.35rem !important;
+  }
+
+  .metric-value {
+    font-size: 0.88rem !important;
+  }
+
+  .loan-status-badge {
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  /* Stage 2: Opened Player Portfolio */
+  .opened-player-portfolio {
+    padding: 0.3rem 0.5rem !important;
+    gap: 0.3rem !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .portfolio-top-bar {
+    padding-bottom: 0.2rem !important;
+    gap: 0.35rem !important;
+  }
+
+  .back-players-btn {
+    padding: 0.25rem 0.55rem !important;
+    font-size: 0.74rem !important;
+  }
+
+  .portfolio-player-badge {
+    padding: 0.2rem 0.55rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .quick-add-bank-btn {
+    padding: 0.25rem 0.6rem !important;
+    font-size: 0.74rem !important;
   }
 
   .player-hero-banner {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 1rem;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    padding: 0.3rem 0.55rem !important;
+    gap: 0.45rem !important;
+    align-items: center !important;
   }
 
-  .hero-left {
-    justify-content: flex-start;
+  .hero-token-display {
+    font-size: 1.4rem !important;
+  }
+
+  .hero-player-title {
+    font-size: 0.92rem !important;
+  }
+
+  .hero-player-cash {
+    font-size: 0.68rem !important;
+  }
+
+  .bank-loan-control-box {
+    padding: 0.25rem 0.5rem !important;
+    gap: 0.45rem !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .loan-title {
+    font-size: 0.74rem !important;
+  }
+
+  .loan-rule-note {
+    display: none !important;
+  }
+
+  .loan-status-text {
+    font-size: 0.68rem !important;
+  }
+
+  .take-loan-btn, .repay-loan-btn {
+    padding: 0.22rem 0.5rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .add-deed-action-card {
+    padding: 0.25rem 0.55rem !important;
+    gap: 0.3rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .add-card-label {
+    font-size: 0.76rem !important;
+  }
+
+  .add-card-sub {
+    display: none !important;
+  }
+
+  .portfolio-deeds-container {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .section-subtitle {
+    font-size: 0.8rem !important;
+    margin: 0.1rem 0 0.2rem !important;
+  }
+
+  /* Deeds scroll horizontally only */
+  .deeds-interactive-grid {
+    flex: 1 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    gap: 0.75rem !important;
+    padding: 0 0.2rem 0.35rem !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   .game-property-card {
-    min-width: 240px;
-    max-width: 240px;
+    min-width: min(235px, 74vw) !important;
+    max-width: min(255px, 78vw) !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    flex-shrink: 0 !important;
+    scroll-snap-align: center !important;
+    border-radius: 14px !important;
+  }
+
+  .card-color-band {
+    padding: 0.45rem 0.65rem 0.3rem !important;
+  }
+
+  .card-name {
+    font-size: 0.92rem !important;
+  }
+
+  .card-badge {
+    font-size: 0.55rem !important;
+    margin-top: 0.1rem !important;
+  }
+
+  .card-details {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 0.35rem 0.6rem !important;
+    gap: 0.28rem !important;
+  }
+
+  .live-rent-banner {
+    padding: 0.22rem 0.5rem !important;
+  }
+
+  .rent-tag {
+    font-size: 0.62rem !important;
+  }
+
+  .rent-amount {
+    font-size: 0.95rem !important;
+  }
+
+  .construction-bay-box {
+    padding: 0.3rem 0.5rem !important;
+    gap: 0.25rem !important;
+  }
+
+  .construction-bay-header {
+    font-size: 0.64rem !important;
+  }
+
+  .construction-socket {
+    height: 32px !important;
+    font-size: 0.95rem !important;
+    border-radius: 6px !important;
+  }
+
+  .socket-num {
+    font-size: 0.5rem !important;
+  }
+
+  .slider-ticks {
+    font-size: 0.54rem !important;
+  }
+
+  .compact-rent-list {
+    gap: 0.1rem !important;
+  }
+
+  .mini-rent-row {
+    padding: 0.1rem 0.3rem !important;
+    font-size: 0.68rem !important;
+  }
+
+  /* Bottom sheet drawer on mobile */
+  .drawer-backdrop {
+    align-items: flex-end !important;
+    justify-content: center !important;
   }
 
   .drawer-panel {
-    max-width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 85% !important;
+    max-height: 85dvh !important;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 1rem !important;
+    animation: slideDrawerUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  @keyframes slideDrawerUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .drawer-title {
+    font-size: 1.1rem !important;
+  }
+
+  .drawer-sub {
+    font-size: 0.72rem !important;
   }
 }
 
-/* Native Horizontal Landscape Screen (Phones held sideways) */
+/* 3. Native Horizontal Landscape Screen (Phones held sideways) */
 @media (orientation: landscape) and (max-height: 550px) {
   .game-session-container {
-    padding: 0.6rem 1rem 1.5rem !important;
-    gap: 0.75rem !important;
+    padding: 0.35rem 0.65rem !important;
+    gap: 0.3rem !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
   }
 
   .banker-header-panel {
-    padding: 0.55rem 1rem !important;
-    gap: 0.5rem !important;
+    padding: 0.3rem 0.65rem !important;
+    gap: 0.25rem !important;
   }
 
   .banker-title {
-    font-size: 1.25rem !important;
+    font-size: 1.1rem !important;
   }
 
   .banker-subtitle {
@@ -1481,60 +2003,76 @@
   }
 
   .banker-stats-pills {
-    gap: 0.4rem !important;
+    gap: 0.35rem !important;
   }
 
   .stat-pill {
-    padding: 0.3rem 0.6rem !important;
-    font-size: 0.7rem !important;
+    padding: 0.2rem 0.45rem !important;
+    font-size: 0.65rem !important;
   }
 
   .pill-val {
-    font-size: 0.95rem !important;
+    font-size: 0.85rem !important;
   }
 
   .tab-btn {
-    padding: 0.4rem 0.9rem !important;
-    font-size: 0.82rem !important;
+    padding: 0.25rem 0.65rem !important;
+    font-size: 0.76rem !important;
   }
 
   .players-cards-middle-grid {
     flex-direction: row !important;
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
+    overflow-y: hidden !important;
     justify-content: flex-start !important;
-    padding-bottom: 0.75rem !important;
+    padding-bottom: 0.35rem !important;
     scroll-snap-type: x mandatory !important;
   }
 
   .player-middle-card {
-    min-width: 250px !important;
-    max-width: 250px !important;
+    min-width: 220px !important;
+    max-width: 240px !important;
+    height: 100% !important;
+    max-height: 100% !important;
     flex-shrink: 0 !important;
     scroll-snap-align: start !important;
-    padding: 1rem !important;
+    padding: 0.65rem !important;
   }
 
   .player-big-avatar {
-    width: 54px !important;
-    height: 54px !important;
+    width: 44px !important;
+    height: 44px !important;
   }
 
   .avatar-icon {
-    font-size: 1.8rem !important;
+    font-size: 1.5rem !important;
+  }
+
+  .player-hero-banner {
+    padding: 0.25rem 0.5rem !important;
+    gap: 0.4rem !important;
   }
 
   .deeds-interactive-grid {
-    padding-bottom: 0.5rem !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    display: flex !important;
+    flex-direction: row !important;
+    padding-bottom: 0.3rem !important;
   }
 
   .game-property-card {
-    min-width: 225px !important;
-    max-width: 225px !important;
+    min-width: 215px !important;
+    max-width: 235px !important;
+    height: 100% !important;
+    max-height: 100% !important;
   }
 
   .construction-socket {
-    height: 38px !important;
-    font-size: 1.05rem !important;
+    height: 28px !important;
+    font-size: 0.9rem !important;
   }
 }
