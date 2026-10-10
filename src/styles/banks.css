@@ -603,3 +603,101 @@
   margin-top: 0;
   padding: 0.65rem 1.5rem;
 }
+
+/* ======================== CARDS STANDALONE PAGE ======================== */
+.cards-page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.cards-nav-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, rgba(79, 172, 254, 0.08), rgba(0, 242, 254, 0.03));
+  border: 1px solid rgba(79, 172, 254, 0.2);
+}
+
+.cards-nav-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.back-home-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  padding: 0.6rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-home-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: translateX(-3px);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.cards-title-block {
+  flex: 1;
+  min-width: 260px;
+}
+
+.cards-filter-bar {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 1rem;
+}
+
+.filter-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 0.5rem 1rem;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.filter-chip.active {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  color: #0f0c29;
+  font-weight: 800;
+  border-color: #00f2fe;
+  box-shadow: 0 4px 14px rgba(0, 242, 254, 0.3);
+}
+
+.cards-showcase-panel {
+  min-height: 70vh;
+}
+
+.cards-showcase-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.hint-pill {
+  font-size: 0.82rem;
+  color: #00f2fe;
+  background: rgba(0, 242, 254, 0.08);
+  border: 1px solid rgba(0, 242, 254, 0.2);
+  padding: 0.4rem 1rem;
+  border-radius: 100px;
+}
