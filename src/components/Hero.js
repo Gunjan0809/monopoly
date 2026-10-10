@@ -3,19 +3,31 @@
 import React from 'react';
 import '../styles/hero.css';
 
-export default function Hero({ onStartGame, onViewCards }) {
+export default function Hero({ onStartGame, onViewCards, forceLandscape, onToggleLandscape }) {
   return (
-    <div className="hero-container">
+    <div className={`hero-container ${forceLandscape ? 'hero-force-horizontal' : ''}`}>
       {/* Background ambient glowing spheres */}
       <div className="ambient-sphere sphere-1" />
       <div className="ambient-sphere sphere-2" />
       <div className="ambient-sphere sphere-3" />
 
+      {/* Top Controls Bar with Horizontal View Button */}
+      <div className="hero-top-controls">
+        <button
+          type="button"
+          className={`hero-landscape-btn ${forceLandscape ? 'active' : ''}`}
+          onClick={onToggleLandscape}
+          title="Switch to Horizontal View for Mobile (Laptop Experience)"
+        >
+          {forceLandscape ? '📱 Standard View' : '🖥️ Horizontal Laptop View'}
+        </button>
+      </div>
+
       <div className="hero-content">
         {/* Monopoly Badge */}
         <div className="hero-top-badge">
           <span className="badge-dice">🎲</span>
-          <span>OFFICIAL MONOPOLY DIGITAL BANK & ENGINE</span>
+          <span>OFFICIAL MONOPOLY DIGITAL BANK &amp; ENGINE</span>
           <span className="badge-dice">🎲</span>
         </div>
 
@@ -76,10 +88,10 @@ export default function Hero({ onStartGame, onViewCards }) {
           </div>
 
           <div className="stat-card">
-            <span className="stat-icon">🃏</span>
+            <span className="stat-icon">💰</span>
             <div className="stat-info">
-              <h4>Pick-The-Card Mini Game</h4>
-              <p>Fair, randomized 3D turn order</p>
+              <h4>Bank Loans &amp; Assets</h4>
+              <p>Fixed ₹500 loan with 5% interest</p>
             </div>
           </div>
         </div>

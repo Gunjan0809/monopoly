@@ -1,26 +1,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
-/* ======================== GAME SESSION LAYOUT ======================== */
+/* ======================== GAME SESSION ROOT LAYOUT ======================== */
 .game-session-container {
   min-height: 100vh;
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem 3rem;
   background: radial-gradient(circle at 50% 10%, #151833 0%, #0d0f20 60%, #06070e 100%);
   color: white;
   font-family: 'Inter', sans-serif;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 /* ======================== BANKER HEADER ======================== */
 .banker-header-panel {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
   background: linear-gradient(135deg, rgba(79, 172, 254, 0.08), rgba(0, 242, 254, 0.03));
   border: 1px solid rgba(79, 172, 254, 0.25);
-  border-radius: 20px;
-  padding: 1.25rem 1.75rem;
+  border-radius: 18px;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
 .banker-brand-row {
@@ -34,8 +37,41 @@
 .banker-brand-group {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
   flex-wrap: wrap;
+}
+
+.banker-menu-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.banker-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: translateX(-3px);
+}
+
+.banker-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0;
+  background: linear-gradient(135deg, #ffffff 40%, #4facfe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.banker-subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .landscape-toggle-btn {
@@ -48,7 +84,6 @@
   font-weight: 700;
   font-size: 0.85rem;
   font-family: 'Outfit', sans-serif;
-  letter-spacing: 0.3px;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
@@ -63,153 +98,34 @@
   box-shadow: 0 4px 14px rgba(0, 242, 254, 0.35);
 }
 
-/* Orientation notification banner */
-.mobile-rotate-notice-banner {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.08));
-  border: 1px solid rgba(255, 215, 0, 0.35);
-  border-radius: 16px;
-  padding: 0.85rem 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.rotate-icon-anim {
-  font-size: 1.8rem;
-  animation: spinPhone 3s ease-in-out infinite;
-}
-
-@keyframes spinPhone {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(90deg); }
-}
-
-.rotate-text-block {
-  flex: 1;
-}
-
-.rotate-text-block strong {
-  color: #ffd700;
-  font-size: 0.95rem;
-  display: block;
-}
-
-.rotate-text-block p {
-  margin: 0.15rem 0 0;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.rotate-btn-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.rotate-action-btn {
-  background: linear-gradient(135deg, #ffd700, #ff9933);
-  color: #090a14;
-  border: none;
-  font-weight: 800;
-  font-size: 0.82rem;
-  padding: 0.5rem 0.95rem;
-  border-radius: 10px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: transform 0.2s ease;
-}
-
-.rotate-action-btn:hover {
-  transform: scale(1.05);
-}
-
-.rotate-dismiss-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.7);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.rotate-dismiss-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
-.banker-menu-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: white;
-  padding: 0.55rem 1.1rem;
-  border-radius: 12px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.85rem;
-  transition: all 0.2s ease;
-}
-
-.banker-menu-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  transform: translateX(-3px);
-}
-
-.banker-title {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.8rem;
-  font-weight: 800;
-  margin: 0;
-  background: linear-gradient(135deg, #ffffff 40%, #4facfe 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.banker-subtitle {
-  margin: 0.2rem 0 0;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-/* Header Live Stat Pills */
+/* Header Live Statistics Pills */
 .banker-stats-pills {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
 .stat-pill {
   background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.45rem 0.85rem;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .pill-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 1.2px;
+  letter-spacing: 1px;
   color: rgba(255, 255, 255, 0.5);
   font-weight: 600;
 }
 
 .pill-val {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: #fff;
 }
@@ -231,23 +147,31 @@
   color: #ffd700;
 }
 
+.loan-pill {
+  border-color: rgba(255, 140, 0, 0.35);
+}
+
+.loan-pill .pill-val {
+  color: #ff9933;
+}
+
 /* Navigation Tabs */
 .banker-tab-nav {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 1rem;
+  padding-top: 0.85rem;
 }
 
 .tab-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.75);
-  padding: 0.65rem 1.4rem;
-  border-radius: 12px;
+  padding: 0.55rem 1.25rem;
+  border-radius: 10px;
   font-family: 'Outfit', sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -265,235 +189,479 @@
   box-shadow: 0 4px 16px rgba(0, 242, 254, 0.35);
 }
 
-/* ======================== TAB 1: PLAYER PORTFOLIOS ======================== */
-.session-content-layout {
-  display: grid;
-  grid-template-columns: 270px 1fr;
-  gap: 1.5rem;
-  align-items: start;
-}
-
-@media (max-width: 800px) and (orientation: portrait) {
-  .session-content-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-}
-
-.players-sidebar {
-  border-radius: 20px;
-  padding: 1.25rem;
-}
-
-.sidebar-heading {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.1rem;
-  margin: 0 0 1rem;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.player-tabs-vertical {
+/* ======================== CENTER STAGE: ALL PLAYER CARDS ======================== */
+.players-center-stage {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  margin: 1rem 0;
 }
 
-.player-tab-card {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 0.9rem 1rem;
+.stage-header {
+  text-align: center;
+}
+
+.stage-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  margin: 0;
+  background: linear-gradient(135deg, #ffffff 40%, #4facfe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.stage-sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Centered Horizontal Grid of Player Cards */
+.players-cards-middle-grid {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1300px;
+}
+
+.player-middle-card {
+  width: 270px;
+  background: linear-gradient(160deg, rgba(25, 28, 55, 0.85) 0%, rgba(14, 16, 35, 0.95) 100%);
+  border: 1.5px solid rgba(79, 172, 254, 0.25);
+  border-radius: 20px;
+  padding: 1.5rem 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
   cursor: pointer;
-  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(14px);
 }
 
-.player-tab-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  transform: translateX(3px);
-}
-
-.player-tab-card.selected {
-  background: linear-gradient(135deg, rgba(79, 172, 254, 0.15), rgba(0, 242, 254, 0.06));
+.player-middle-card:hover {
+  transform: translateY(-8px) scale(1.02);
   border-color: #00f2fe;
-  box-shadow: 0 4px 20px rgba(0, 242, 254, 0.15);
+  box-shadow: 0 16px 45px rgba(0, 242, 254, 0.25), 0 0 30px rgba(79, 172, 254, 0.15);
 }
 
-.player-tab-header {
+.card-top-shine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #00f2fe, transparent);
+  opacity: 0.7;
+}
+
+.player-card-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.player-turn-rank {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  padding: 0.25rem 0.65rem;
+  border-radius: 100px;
+}
+
+.player-big-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid #00f2fe;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  margin-top: 0.2rem;
 }
 
-.player-tab-token {
-  font-size: 1.8rem;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+.avatar-icon {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
 }
 
-.player-tab-order {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: #00f2fe;
-  font-weight: 700;
-  display: block;
-}
-
-.player-tab-name {
-  margin: 0.15rem 0 0;
-  font-size: 1rem;
-  font-weight: 700;
+.player-card-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0;
   color: #fff;
 }
 
-.player-tab-stats {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.6rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+.player-metrics-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 12px;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.asset-count-badge {
-  font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.6);
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.metric-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.5);
   font-weight: 600;
 }
 
-.viewing-pill {
-  font-size: 0.68rem;
-  background: rgba(0, 242, 254, 0.2);
+.metric-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  margin-top: 0.15rem;
+}
+
+.cash-val {
+  color: #66bb6a;
+}
+
+.deeds-val {
+  color: #4facfe;
+}
+
+.loan-status-badge {
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.loan-status-badge.no-loan {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.loan-status-badge.has-loan {
+  background: rgba(255, 140, 0, 0.15);
+  border: 1px solid rgba(255, 140, 0, 0.4);
+  color: #ff9933;
+}
+
+.loan-info-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.card-footer-action {
+  margin-top: auto;
+  text-align: center;
+}
+
+.inspect-prompt {
+  font-size: 0.8rem;
+  font-weight: 700;
   color: #00f2fe;
-  padding: 0.2rem 0.55rem;
+  letter-spacing: 0.5px;
+}
+
+/* ======================== OPENED PLAYER PORTFOLIO ======================== */
+.opened-player-portfolio {
+  border-radius: 20px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.portfolio-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.back-players-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  padding: 0.55rem 1.15rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-players-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: translateX(-3px);
+}
+
+.portfolio-player-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.4rem 0.9rem;
   border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.badge-token {
+  font-size: 1.3rem;
+}
+
+.badge-name {
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.badge-turn {
+  font-size: 0.72rem;
+  color: #ffd700;
   font-weight: 700;
 }
 
-/* Portfolio Main View */
-.player-portfolio-main {
-  border-radius: 20px;
-  padding: 1.75rem;
-  min-height: 75vh;
-}
-
-.portfolio-banner {
+/* Player Hero Banner with Loan Desk */
+.player-hero-banner {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 1.5rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 18px;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.banner-left {
+.hero-left {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1.1rem;
 }
 
-.banner-big-token {
-  font-size: 3.5rem;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+.hero-token-display {
+  font-size: 3rem;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
 }
 
-.banner-order-tag {
-  font-size: 0.75rem;
+.hero-player-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.6rem;
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 2px;
+  margin: 0;
+}
+
+.hero-player-cash {
+  margin: 0.2rem 0 0;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.hero-player-cash strong {
+  color: #66bb6a;
+}
+
+/* Loan Control Desk Box */
+.bank-loan-control-box {
+  background: linear-gradient(135deg, rgba(255, 153, 51, 0.12), rgba(255, 82, 82, 0.06));
+  border: 1px solid rgba(255, 153, 51, 0.35);
+  border-radius: 14px;
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.loan-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.loan-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
   color: #ffd700;
 }
 
-.banner-player-name {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.8rem;
-  font-weight: 800;
-  margin: 0.15rem 0 0.35rem;
+.loan-rule-note {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
 }
 
-.banner-hint {
-  margin: 0;
-  font-size: 0.85rem;
+.loan-box-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.loan-status-text {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.loan-due-warning {
+  color: #ff9933;
+}
+
+.loan-clean-status {
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* Cool Method: Add Deed Slot Card */
-.add-deed-slot-card {
-  background: linear-gradient(135deg, rgba(0, 242, 254, 0.12), rgba(79, 172, 254, 0.05));
-  border: 2px dashed rgba(0, 242, 254, 0.4);
-  border-radius: 16px;
-  padding: 1rem 1.5rem;
+.loan-actions-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.take-loan-btn {
+  background: linear-gradient(135deg, #ff9933, #ff6b6b);
+  color: #090a14;
+  border: none;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.take-loan-btn:hover {
+  transform: scale(1.05);
+}
+
+.repay-loan-btn {
+  background: linear-gradient(135deg, #00f2fe, #4facfe);
+  color: #090a14;
+  border: none;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.repay-loan-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Add Deed Action Card */
+.add-deed-action-card {
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(79, 172, 254, 0.06));
+  border: 1.5px dashed rgba(0, 242, 254, 0.5);
+  border-radius: 14px;
+  padding: 0.85rem 1.25rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.2rem;
   cursor: pointer;
   transition: all 0.25s ease;
   user-select: none;
 }
 
-.add-deed-slot-card:hover {
-  background: linear-gradient(135deg, rgba(0, 242, 254, 0.22), rgba(79, 172, 254, 0.12));
-  border-color: #00f2fe;
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 10px 25px rgba(0, 242, 254, 0.25);
+.add-deed-action-card:hover {
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.25), rgba(79, 172, 254, 0.15));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 242, 254, 0.3);
 }
 
-.add-slot-sparkle {
-  font-size: 1.5rem;
+.add-icon-glow {
+  font-size: 1.4rem;
 }
 
-.add-slot-text {
+.add-card-label {
   font-family: 'Outfit', sans-serif;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #00f2fe;
 }
 
-.add-slot-sub {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-/* Empty portfolio */
-.empty-portfolio-box {
-  text-align: center;
-  padding: 4rem 1rem;
+.add-card-sub {
+  font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.6);
 }
 
-.empty-icon {
-  font-size: 3.5rem;
+/* Portfolio Deeds List */
+.section-subtitle {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0 0 1rem;
+}
+
+.empty-deeds-notice {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.empty-symbol {
+  font-size: 3rem;
   display: block;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   opacity: 0.5;
 }
 
-.empty-portfolio-box h3 {
+.empty-deeds-notice h4 {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.4rem;
-  margin: 0 0 0.5rem;
+  font-size: 1.3rem;
+  margin: 0 0 0.4rem;
   color: #fff;
 }
 
-.empty-portfolio-box p {
-  max-width: 480px;
+.empty-deeds-notice p {
+  max-width: 460px;
   margin: 0 auto;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
-/* Deeds Interactive Grid */
+/* Deeds Grid */
 .deeds-interactive-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.5rem;
+  display: flex;
+  overflow-x: auto;
+  gap: 1.25rem;
+  padding-bottom: 1rem;
+  scroll-snap-type: x mandatory;
 }
 
-/* Game Property Card */
 .game-property-card {
+  min-width: 260px;
+  max-width: 260px;
   border-radius: 18px;
   overflow: hidden;
   background: rgba(15, 17, 34, 0.9);
@@ -501,13 +669,20 @@
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  transition: transform 0.25s ease;
 }
 
 .game-property-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
-  border-color: rgba(79, 172, 254, 0.35);
+  border-color: rgba(0, 242, 254, 0.4);
+}
+
+.card-color-band {
+  padding: 1.25rem 1rem 0.85rem;
+  text-align: center;
+  position: relative;
 }
 
 .deed-release-btn {
@@ -528,10 +703,37 @@
 .deed-release-btn:hover {
   background: rgba(230, 0, 0, 0.7);
   color: #fff;
-  border-color: #ff4b4b;
 }
 
-/* Live Rent Banner */
+.card-name {
+  font-family: 'Outfit', sans-serif;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.card-badge {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.65);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+}
+
+.card-details {
+  padding: 0.85rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .live-rent-banner {
   display: flex;
   justify-content: space-between;
@@ -539,12 +741,11 @@
   background: linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(79, 172, 254, 0.05));
   border: 1px solid rgba(0, 242, 254, 0.3);
   border-radius: 10px;
-  padding: 0.5rem 0.8rem;
-  margin-bottom: 0.5rem;
+  padding: 0.45rem 0.75rem;
 }
 
 .rent-tag {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   color: #00f2fe;
@@ -553,34 +754,32 @@
 
 .rent-amount {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 242, 254, 0.5);
 }
 
-/* ======================== COOL METHOD: 3D CONSTRUCTION BAY ======================== */
+/* Construction Bay */
 .construction-bay-box {
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 0.75rem;
-  margin: 0.4rem 0;
+  border-radius: 12px;
+  padding: 0.65rem;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.5rem;
 }
 
 .construction-bay-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
 }
 
 .bay-title {
   text-transform: uppercase;
-  letter-spacing: 1.2px;
+  letter-spacing: 1px;
   color: rgba(255, 255, 255, 0.5);
   font-weight: 700;
 }
@@ -590,99 +789,75 @@
   color: #ffd700;
 }
 
-/* 5 Sockets Row */
 .construction-sockets-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .construction-socket {
-  height: 48px;
-  border-radius: 10px;
+  height: 44px;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.2s ease;
   user-select: none;
-  position: relative;
 }
 
 .construction-socket:hover {
-  transform: translateY(-3px) scale(1.08);
+  transform: translateY(-2px) scale(1.08);
 }
 
 .house-socket.empty {
   background: rgba(255, 255, 255, 0.04);
-  border: 1.5px dashed rgba(255, 255, 255, 0.15);
-}
-
-.house-socket.empty:hover {
-  border-color: #66bb6a;
-  background: rgba(102, 187, 106, 0.15);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
 }
 
 .plot-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
 }
 
 .house-socket.built {
-  background: linear-gradient(135deg, rgba(15, 157, 88, 0.35), rgba(102, 187, 106, 0.2));
+  background: rgba(15, 157, 88, 0.35);
   border: 1.5px solid #0f9d58;
-  box-shadow: 0 4px 12px rgba(15, 157, 88, 0.4);
-  animation: popBuilt 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes popBuilt {
-  0% { transform: scale(0.6); }
-  70% { transform: scale(1.15); }
-  100% { transform: scale(1); }
+  box-shadow: 0 4px 10px rgba(15, 157, 88, 0.4);
 }
 
 .hotel-socket.empty {
   background: rgba(255, 255, 255, 0.04);
-  border: 1.5px dashed rgba(255, 107, 107, 0.3);
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.hotel-socket.empty:hover {
-  border-color: #ff5252;
-  background: rgba(255, 82, 82, 0.2);
-  color: #ff5252;
+  border: 1px dashed rgba(255, 107, 107, 0.3);
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .hotel-socket.hotel-active {
   background: linear-gradient(135deg, #e60000, #ff5252);
   border: 1.5px solid #ff7979;
-  box-shadow: 0 0 20px rgba(255, 82, 82, 0.6);
-  animation: popBuilt 0.3s ease;
+  box-shadow: 0 0 15px rgba(255, 82, 82, 0.6);
 }
 
 .socket-num {
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   font-weight: 700;
   opacity: 0.7;
-  margin-top: 0.1rem;
 }
 
-/* Tactile Range Slider */
 .tactile-slider-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  margin-top: 0.2rem;
+  gap: 0.15rem;
 }
 
 .tactile-range-input {
   -webkit-appearance: none;
   width: 100%;
-  height: 6px;
+  height: 5px;
   background: rgba(255, 255, 255, 0.12);
   border-radius: 5px;
   outline: none;
@@ -692,42 +867,34 @@
 .tactile-range-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: #00f2fe;
   cursor: pointer;
   box-shadow: 0 0 10px rgba(0, 242, 254, 0.6);
-  transition: transform 0.15s ease;
-}
-
-.tactile-range-input::-webkit-slider-thumb:hover {
-  transform: scale(1.3);
 }
 
 .slider-ticks {
   display: flex;
   justify-content: space-between;
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   color: rgba(255, 255, 255, 0.4);
   font-weight: 600;
-  padding: 0 2px;
 }
 
-/* Compact rent list with active highlight */
 .compact-rent-list {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  margin-top: 0.3rem;
+  gap: 0.2rem;
 }
 
 .mini-rent-row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.76rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 5px;
   color: rgba(255, 255, 255, 0.65);
 }
 
@@ -744,10 +911,46 @@
   color: #ff9e9e;
 }
 
-/* ======================== TAB 2: MASTER LEDGER TABLE ======================== */
+.station-rates-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.card-rule-box {
+  background: rgba(233, 69, 96, 0.08);
+  border: 1px solid rgba(233, 69, 96, 0.2);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.74rem;
+}
+
+.card-rule-box p {
+  margin: 0;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.detail-value {
+  color: #fff;
+  font-weight: 700;
+}
+
+.mortgage-row {
+  margin-top: auto;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ======================== TAB 2: MASTER LEDGER ======================== */
 .ledger-full-layout {
-  border-radius: 20px;
-  padding: 1.75rem;
+  border-radius: 18px;
+  padding: 1.5rem;
 }
 
 .ledger-header {
@@ -755,22 +958,22 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.25rem;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .ledger-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 800;
   margin: 0;
 }
 
 .ledger-sub {
   margin: 0.2rem 0 0;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: rgba(255, 255, 255, 0.55);
 }
 
@@ -794,63 +997,56 @@
 
 .ledger-filter-btn.active {
   background: #00f2fe;
-  color: #080915;
+  color: #080914;
   font-weight: 800;
   border-color: #00f2fe;
 }
 
 .ledger-table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ledger-table {
   width: 100%;
   border-collapse: collapse;
-  text-align: left;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
 }
 
 .ledger-table th {
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 0.9rem;
   color: rgba(255, 255, 255, 0.5);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   font-weight: 700;
 }
 
 .ledger-table td {
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 0.9rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.ledger-table tr:hover td {
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .cell-card-name {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   font-weight: 700;
-  color: #fff;
 }
 
 .color-swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
   display: inline-block;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
 .type-chip {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   background: rgba(255, 255, 255, 0.06);
-  padding: 0.25rem 0.6rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 100px;
-  color: rgba(255, 255, 255, 0.8);
 }
 
 .cell-num {
@@ -870,24 +1066,16 @@
   gap: 0.4rem;
   background: rgba(79, 172, 254, 0.12);
   border: 1px solid rgba(79, 172, 254, 0.3);
-  padding: 0.3rem 0.75rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 100px;
-}
-
-.owner-name {
+  font-size: 0.8rem;
   font-weight: 700;
-  color: #fff;
-}
-
-.owner-turn {
-  font-size: 0.7rem;
-  color: #00f2fe;
 }
 
 .bank-reserve-tag {
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.4);
   font-style: italic;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
 }
 
 .status-houses {
@@ -908,47 +1096,54 @@
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: white;
-  padding: 0.45rem 0.75rem;
+  padding: 0.35rem 0.65rem;
   border-radius: 8px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   outline: none;
-  cursor: pointer;
 }
 
 .ledger-assign-select option {
   background: #181b33;
-  color: white;
 }
 
 /* ======================== TAB 3: BANK VAULT ======================== */
 .bank-vault-layout {
-  border-radius: 20px;
-  padding: 1.75rem;
+  border-radius: 18px;
+  padding: 1.5rem;
 }
 
 .vault-header {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.85rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .vault-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 800;
   margin: 0;
 }
 
 .vault-sub {
   margin: 0.2rem 0 0;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: rgba(255, 255, 255, 0.55);
+}
+
+.empty-vault-box {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-vault-box span {
+  font-size: 3rem;
 }
 
 .vault-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 1.1rem;
 }
 
 .vault-card-item {
@@ -960,12 +1155,12 @@
 }
 
 .vault-card-item:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   border-color: rgba(0, 242, 254, 0.4);
 }
 
 .vault-card-banner {
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 0.9rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -975,40 +1170,38 @@
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
   text-transform: uppercase;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   color: #fff;
-  letter-spacing: 0.5px;
 }
 
 .vault-card-cost {
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
-  font-size: 1rem;
-  color: #fff;
+  font-size: 0.95rem;
   background: rgba(0, 0, 0, 0.3);
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
+  padding: 0.15rem 0.45rem;
+  border-radius: 5px;
 }
 
 .vault-card-body {
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 0.9rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .vault-base-rent {
   display: flex;
   justify-content: space-between;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: rgba(255, 255, 255, 0.7);
 }
 
 .vault-assign-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.78rem;
+  gap: 0.45rem;
+  font-size: 0.75rem;
 }
 
 .vault-player-select {
@@ -1016,9 +1209,9 @@
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: white;
-  padding: 0.4rem 0.6rem;
-  border-radius: 8px;
-  font-size: 0.8rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
   outline: none;
 }
 
@@ -1026,7 +1219,7 @@
   background: #181b33;
 }
 
-/* ======================== DEED ACQUISITION DRAWER ======================== */
+/* ======================== MODAL DRAWER: SWIPE-TO-ADD ======================== */
 .drawer-backdrop {
   position: fixed;
   inset: 0;
@@ -1040,15 +1233,16 @@
 
 .drawer-panel {
   width: 100%;
-  max-width: 460px;
+  max-width: 480px;
   height: 100%;
   background: linear-gradient(160deg, #13152c 0%, #1a1c38 100%);
   border-left: 1px solid rgba(79, 172, 254, 0.25);
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.7);
   display: flex;
   flex-direction: column;
-  padding: 1.75rem;
+  padding: 1.5rem;
   animation: slideDrawer 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
 }
 
 @keyframes slideDrawer {
@@ -1060,24 +1254,23 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .drawer-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 800;
   margin: 0;
   color: #fff;
 }
 
 .drawer-sub {
-  margin: 0.25rem 0 0;
-  font-size: 0.82rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.55);
-  line-height: 1.4;
 }
 
 .drawer-close-btn {
@@ -1093,156 +1286,166 @@
   justify-content: center;
 }
 
-.drawer-cards-list {
+.drawer-cards-swipe-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   overflow-y: auto;
   flex: 1;
+  padding-right: 0.25rem;
 }
 
-.drawer-card-choice {
+.swipe-card-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.85rem;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 0.85rem 1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  transition: all 0.25s ease;
+  user-select: none;
 }
 
-.drawer-card-choice:hover {
-  background: rgba(79, 172, 254, 0.12);
-  border-color: #00f2fe;
-  transform: translateX(-4px);
+.swipe-card-row:hover {
+  background: rgba(79, 172, 254, 0.1);
+  border-color: rgba(0, 242, 254, 0.4);
 }
 
-.choice-color-strip {
+.swipe-card-row.swiped-success {
+  transform: translateX(40px);
+  opacity: 0;
+  background: rgba(15, 157, 88, 0.3);
+  border-color: #0f9d58;
+}
+
+.swipe-card-color-strip {
   width: 8px;
-  height: 36px;
+  height: 42px;
   border-radius: 4px;
+  flex-shrink: 0;
 }
 
-.choice-info {
+.swipe-card-details {
   flex: 1;
 }
 
-.choice-name {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #fff;
-  text-transform: uppercase;
+.swipe-card-headline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.choice-cost {
-  font-size: 0.78rem;
+.swipe-card-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.swipe-card-price {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #ffd700;
+}
+
+.swipe-card-rent-hint {
+  font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.55);
 }
 
-.choice-action-badge {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #00f2fe;
-  background: rgba(0, 242, 254, 0.1);
-  padding: 0.35rem 0.7rem;
-  border-radius: 100px;
+.swipe-claim-btn {
+  background: linear-gradient(135deg, #00f2fe, #4facfe);
+  color: #090a14;
+  border: none;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* ======================== HORIZONTAL GAMING EXPERIENCE (LAPTOP-STYLE ON MOBILE) ======================== */
-
-/* Force Horizontal (Virtual Landscape rotation for vertical phones) */
-@media (orientation: portrait) {
-  .game-session-container.force-horizontal-view {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vh !important;
-    height: 100vw !important;
-    transform: rotate(90deg) translateY(-100vw) !important;
-    transform-origin: top left !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    z-index: 99999 !important;
-    padding: 0.75rem 1rem !important;
-    box-sizing: border-box !important;
-    gap: 0.85rem !important;
-  }
-
-  .game-session-container.force-horizontal-view .session-content-layout {
-    display: grid !important;
-    grid-template-columns: 220px 1fr !important;
-    gap: 1rem !important;
-  }
-
-  .game-session-container.force-horizontal-view .banker-header-panel {
-    padding: 0.6rem 1rem !important;
-    gap: 0.5rem !important;
-    border-radius: 14px !important;
-  }
-
-  .game-session-container.force-horizontal-view .banker-title {
-    font-size: 1.25rem !important;
-  }
-
-  .game-session-container.force-horizontal-view .banker-subtitle {
-    display: none !important;
-  }
-
-  .game-session-container.force-horizontal-view .stat-pill {
-    padding: 0.35rem 0.65rem !important;
-    font-size: 0.75rem !important;
-  }
-
-  .game-session-container.force-horizontal-view .tab-btn {
-    padding: 0.45rem 0.9rem !important;
-    font-size: 0.82rem !important;
-  }
-
-  .game-session-container.force-horizontal-view .portfolio-banner {
-    padding-bottom: 0.85rem !important;
-    margin-bottom: 0.85rem !important;
-  }
-
-  .game-session-container.force-horizontal-view .banner-big-token {
-    font-size: 2.2rem !important;
-  }
-
-  .game-session-container.force-horizontal-view .banner-player-name {
-    font-size: 1.3rem !important;
-  }
-
-  .game-session-container.force-horizontal-view .deeds-interactive-grid {
-    display: flex !important;
-    overflow-x: auto !important;
-    gap: 1rem !important;
-    padding-bottom: 0.75rem !important;
-  }
-
-  .game-session-container.force-horizontal-view .game-property-card {
-    min-width: 235px !important;
-    max-width: 235px !important;
-    flex-shrink: 0 !important;
-  }
+.swipe-claim-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(0, 242, 254, 0.4);
 }
 
-/* Native Horizontal Landscape Mode (Phone/Tablet held sideways, matching Laptop View) */
-@media (orientation: landscape) and (max-height: 650px) {
+/* ======================== MOBILE & HORIZONTAL SCREEN ADAPTATIONS ======================== */
+
+/* When Virtual Horizontal Landscape is enabled */
+.game-session-container.force-horizontal-view {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
+@media (max-width: 850px) {
   .game-session-container {
-    padding: 0.75rem 1rem !important;
-    gap: 0.85rem !important;
+    padding: 0.85rem 1rem 2rem;
+    gap: 1rem;
   }
 
   .banker-header-panel {
-    padding: 0.6rem 1.1rem !important;
-    gap: 0.6rem !important;
-    border-radius: 14px !important;
+    padding: 0.85rem 1rem;
+    gap: 0.75rem;
   }
 
   .banker-title {
-    font-size: 1.3rem !important;
+    font-size: 1.3rem;
+  }
+
+  .banker-subtitle {
+    display: none;
+  }
+
+  .players-cards-middle-grid {
+    gap: 1rem;
+  }
+
+  .player-middle-card {
+    width: min(320px, 92vw);
+    padding: 1.25rem 1rem 1rem;
+  }
+
+  .player-hero-banner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+  }
+
+  .hero-left {
+    justify-content: flex-start;
+  }
+
+  .game-property-card {
+    min-width: 240px;
+    max-width: 240px;
+  }
+
+  .drawer-panel {
+    max-width: 100%;
+  }
+}
+
+/* Native Horizontal Landscape Screen (Phones held sideways) */
+@media (orientation: landscape) and (max-height: 550px) {
+  .game-session-container {
+    padding: 0.6rem 1rem 1.5rem !important;
+    gap: 0.75rem !important;
+  }
+
+  .banker-header-panel {
+    padding: 0.55rem 1rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .banker-title {
+    font-size: 1.25rem !important;
   }
 
   .banker-subtitle {
@@ -1250,94 +1453,60 @@
   }
 
   .banker-stats-pills {
-    gap: 0.5rem !important;
+    gap: 0.4rem !important;
   }
 
   .stat-pill {
-    padding: 0.35rem 0.65rem !important;
+    padding: 0.3rem 0.6rem !important;
+    font-size: 0.7rem !important;
   }
 
   .pill-val {
     font-size: 0.95rem !important;
   }
 
-  .banker-tab-nav {
-    padding-top: 0.5rem !important;
-    gap: 0.5rem !important;
-  }
-
   .tab-btn {
-    padding: 0.45rem 1rem !important;
+    padding: 0.4rem 0.9rem !important;
     font-size: 0.82rem !important;
   }
 
-  /* Keep Horizontal Side-by-Side just like laptop */
-  .session-content-layout {
-    display: grid !important;
-    grid-template-columns: 220px 1fr !important;
-    gap: 1rem !important;
-  }
-
-  .players-sidebar {
-    padding: 1rem !important;
-  }
-
-  .player-tab-card {
-    padding: 0.65rem 0.85rem !important;
-  }
-
-  .player-tab-token {
-    font-size: 1.5rem !important;
-  }
-
-  .player-portfolio-main {
-    padding: 1.1rem !important;
-  }
-
-  .portfolio-banner {
-    padding-bottom: 0.75rem !important;
-    margin-bottom: 0.75rem !important;
-  }
-
-  .banner-big-token {
-    font-size: 2.2rem !important;
-  }
-
-  .banner-player-name {
-    font-size: 1.3rem !important;
-  }
-
-  /* Horizontal scrolling card strip */
-  .deeds-interactive-grid {
-    display: flex !important;
+  .players-cards-middle-grid {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
     overflow-x: auto !important;
-    gap: 1rem !important;
-    padding-bottom: 0.65rem !important;
+    justify-content: flex-start !important;
+    padding-bottom: 0.75rem !important;
     scroll-snap-type: x mandatory !important;
   }
 
-  .game-property-card {
-    min-width: 235px !important;
-    max-width: 235px !important;
+  .player-middle-card {
+    min-width: 250px !important;
+    max-width: 250px !important;
     flex-shrink: 0 !important;
     scroll-snap-align: start !important;
+    padding: 1rem !important;
   }
 
-  .construction-socket {
-    height: 42px !important;
-    font-size: 1.1rem !important;
+  .player-big-avatar {
+    width: 54px !important;
+    height: 54px !important;
   }
 
-  /* Vault horizontal scroll */
-  .vault-cards-grid {
-    display: flex !important;
-    overflow-x: auto !important;
-    gap: 1rem !important;
+  .avatar-icon {
+    font-size: 1.8rem !important;
+  }
+
+  .deeds-interactive-grid {
     padding-bottom: 0.5rem !important;
   }
 
-  .vault-card-item {
-    min-width: 200px !important;
-    flex-shrink: 0 !important;
+  .game-property-card {
+    min-width: 225px !important;
+    max-width: 225px !important;
+  }
+
+  .construction-socket {
+    height: 38px !important;
+    font-size: 1.05rem !important;
   }
 }

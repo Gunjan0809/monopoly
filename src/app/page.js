@@ -10,18 +10,25 @@ export default function Home() {
   // 'hero' | 'cards' | 'setup' | 'game'
   const [currentView, setCurrentView] = useState('hero');
   const [activePlayers, setActivePlayers] = useState([]);
+  const [forceLandscape, setForceLandscape] = useState(false);
 
   const handleStartGameSession = (finalPlayers) => {
     setActivePlayers(finalPlayers);
     setCurrentView('game');
   };
 
+  const handleToggleLandscape = () => {
+    setForceLandscape((prev) => !prev);
+  };
+
   return (
-    <main>
+    <main className={forceLandscape ? 'app-force-horizontal' : ''}>
       {currentView === 'hero' && (
         <Hero
           onStartGame={() => setCurrentView('setup')}
           onViewCards={() => setCurrentView('cards')}
+          forceLandscape={forceLandscape}
+          onToggleLandscape={handleToggleLandscape}
         />
       )}
 
@@ -43,6 +50,8 @@ export default function Home() {
           players={activePlayers}
           onBackToHome={() => setCurrentView('hero')}
           onRestartSetup={() => setCurrentView('setup')}
+          forceLandscape={forceLandscape}
+          onToggleLandscape={handleToggleLandscape}
         />
       )}
     </main>

@@ -14,6 +14,36 @@
   padding: 3rem 1.5rem;
 }
 
+.hero-top-controls {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 20;
+}
+
+.hero-landscape-btn {
+  background: rgba(0, 242, 254, 0.12);
+  border: 1px solid rgba(0, 242, 254, 0.4);
+  color: #00f2fe;
+  padding: 0.6rem 1.25rem;
+  border-radius: 100px;
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.hero-landscape-btn:hover,
+.hero-landscape-btn.active {
+  background: linear-gradient(135deg, #00f2fe, #4facfe);
+  color: #080914;
+  border-color: #00f2fe;
+  box-shadow: 0 6px 20px rgba(0, 242, 254, 0.4);
+}
+
 /* Ambient glow spheres in background */
 .ambient-sphere {
   position: absolute;
