@@ -292,3 +292,38 @@
   font-size: 0.78rem;
   color: rgba(255, 255, 255, 0.5);
 }
+
+/* ======================== GLOBAL HORIZONTAL MODE ON HERO ======================== */
+.app-force-horizontal .hero-container {
+  padding: 1.5rem 2rem !important;
+  min-height: 100vh !important;
+}
+
+.app-force-horizontal .hero-title {
+  font-size: clamp(2.5rem, 6vw, 4.2rem) !important;
+  letter-spacing: 4px !important;
+}
+
+.app-force-horizontal .hero-tagline {
+  font-size: 0.95rem !important;
+  max-width: 620px !important;
+  line-height: 1.4 !important;
+}
+
+.app-force-horizontal .hero-cta-buttons {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 1rem !important;
+  max-width: 700px !important;
+}
+
+.app-force-horizontal .hero-btn {
+  min-width: 220px !important;
+  padding: 0.95rem 1.25rem !important;
+}
+
+.app-force-horizontal .hero-stats-row {
+  grid-template-columns: repeat(3, 1fr) !important;
+  margin-top: 1rem !important;
+  gap: 0.85rem !important;
+}

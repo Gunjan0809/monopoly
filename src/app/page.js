@@ -17,8 +17,34 @@ export default function Home() {
     setCurrentView('game');
   };
 
-  const handleToggleLandscape = () => {
-    setForceLandscape((prev) => !prev);
+  const handleToggleLandscape = async () => {
+    const next = !forceLandscape;
+    setForceLandscape(next);
+
+    if (next) {
+      try {
+        const el = document.documentElement;
+        if (el.requestFullscreen) {
+          await el.requestFullscreen().catch(() => {});
+        } else if (el.webkitRequestFullscreen) {
+          await el.webkitRequestFullscreen().catch(() => {});
+        }
+        if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock('landscape').catch(() => {});
+        }
+      } catch (e) {}
+    } else {
+      try {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+          await document.webkitExitFullscreen().catch(() => {});
+        }
+        if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
+      } catch (e) {}
+    }
   };
 
   return (
