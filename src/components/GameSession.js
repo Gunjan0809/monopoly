@@ -743,8 +743,6 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   const remainingCards = allCards.filter((card) => !ownership[card._id]);
   const portfolioPlayer = gamePlayers.find((p) => p.id === viewingPortfolioPlayerId);
   const portfolioCards = allCards.filter((card) => ownership[card._id]?.ownerId === viewingPortfolioPlayerId);
-  const sellingCard = allCards.find((c) => c._id === sellingCardId);
-  const sellingCardOwn = ownership[sellingCardId] || { erections: 0 };
 
   // Trade Desk Party Cards
   const trader1 = gamePlayers.find((p) => p.id === tradePlayer1Id);
