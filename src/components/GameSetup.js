@@ -260,10 +260,21 @@ export default function GameSetup({ onBackToHome, onStartGameSession }) {
             </button>
             <button
               type="button"
+              className="setup-secondary-btn"
+              onClick={() => {
+                if (onStartGameSession) {
+                  onStartGameSession(players);
+                }
+              }}
+            >
+              Start Game Directly ⚡
+            </button>
+            <button
+              type="button"
               className="setup-primary-btn glow-btn"
               onClick={startMiniGame}
             >
-              Start Pick-The-Card Mini-Game 🃏
+              Pick-The-Card Mini-Game 🃏
             </button>
           </div>
         </div>

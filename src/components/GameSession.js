@@ -3,796 +3,936 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/game-session.css';
 
-const UTILITY_CARDS = [
+// Color mapper to cleanly display database colors
+const normalizeCardColor = (color, type) => {
+  if (type === 'station') return '#334155';
+  if (type === 'utility') return '#0369a1';
+  const c = color ? String(color).toLowerCase().trim() : '';
+  const map = {
+    brown: '#8B4513',
+    blue: '#2563eb',
+    pink: '#ec4899',
+    orange: '#ff9933',
+    '#ff9933': '#ff9933',
+    red: '#ef4444',
+    yellow: '#eab308',
+    green: '#16a34a',
+    purple: '#7c3aed',
+  };
+  return map[c] || color || '#3b82f6';
+};
+
+// Enhanced themes matching requested pastel palette
+const PLAYER_THEMES = [
   {
-    _id: 'utility-electric',
-    type: 'utility',
-    name: 'Electric Company',
-    buyingCost: 150,
-    mortgage: 75,
-    icon: '⚡',
+    bg: 'linear-gradient(165deg, #adc8f9 0%, #89b4f7 50%, #6fa0ef 100%)',
+    glow: 'rgba(111, 160, 239, 0.55)',
+    border: 'rgba(255, 255, 255, 0.6)',
+    token: '🎩',
   },
   {
-    _id: 'utility-water',
-    type: 'utility',
-    name: 'Waterworks',
-    buyingCost: 150,
-    mortgage: 75,
-    icon: '💧',
+    bg: 'linear-gradient(165deg, #bfe7c7 0%, #9ce0a9 50%, #7fd391 100%)',
+    glow: 'rgba(127, 211, 145, 0.55)',
+    border: 'rgba(255, 255, 255, 0.6)',
+    token: '🚗',
+  },
+  {
+    bg: 'linear-gradient(165deg, #fed5a0 0%, #fbbd72 50%, #f2a44b 100%)',
+    glow: 'rgba(242, 164, 75, 0.55)',
+    border: 'rgba(255, 255, 255, 0.6)',
+    token: '🐕',
+  },
+  {
+    bg: 'linear-gradient(165deg, #dabbea 0%, #c597e2 50%, #ae74d8 100%)',
+    glow: 'rgba(174, 116, 216, 0.55)',
+    border: 'rgba(255, 255, 255, 0.6)',
+    token: '🚢',
+  },
+  {
+    bg: 'linear-gradient(165deg, #fca7a7 0%, #f77f7f 50%, #ea5c5c 100%)',
+    glow: 'rgba(234, 92, 92, 0.55)',
+    border: 'rgba(255, 255, 255, 0.6)',
+    token: '👞',
+  },
+  {
+    bg: 'linear-gradient(165deg, #fef08a 0%, #fde047 50%, #eab308 100%)',
+    glow: 'rgba(234, 179, 8, 0.55)',
+    border: 'rgba(255, 255, 255, 0.6)',
+    token: '🐱',
+  },
+  {
+    bg: 'linear-gradient(165deg, #99f6e4 0%, #5eead4 50%, #2dd4bf 100%)',
+    glow: 'rgba(45, 212, 191, 0.55)',
+    border: 'rgba(255, 255, 255, 0.6)',
+    token: '🚂',
+  },
+  {
+    bg: 'linear-gradient(165deg, #fbcfe8 0%, #f472b6 50%, #db2777 100%)',
+    glow: 'rgba(219, 39, 119, 0.55)',
+    border: 'rgba(255, 255, 255, 0.6)',
+    token: '✈️',
   },
 ];
 
 export default function GameSession({ players, onBackToHome, onRestartSetup }) {
+  // Ensure default 5 players if none passed, matching user screenshot
+  const gamePlayers = (players && players.length > 0)
+    ? players
+    : [
+        { id: 1, name: 'Player 1' },
+        { id: 2, name: 'Player 2' },
+        { id: 3, name: 'Player 3' },
+        { id: 4, name: 'Player 4' },
+        { id: 5, name: 'Player 5' },
+      ];
+
+  const [activePlayerIndex, setActivePlayerIndex] = useState(0);
+
+  // When a player box is tapped, this stores their id to open their Portfolio Page
+  // null = Main Boxes Stage; number = Portfolio View for that player
+  const [viewingPortfolioPlayerId, setViewingPortfolioPlayerId] = useState(null);
+
+  // Real Database Cards State (No placeholders!)
   const [allCards, setAllCards] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Active view tab: 'players' (Player Portfolios) | 'ledger' (Banker's Master Ledger) | 'bank' (Remaining Cards)
-  const [activeTab, setActiveTab] = useState('players');
-
-  // Selected player for viewing details or assigning cards
-  const [selectedPlayerId, setSelectedPlayerId] = useState(players[0]?.id || 1);
+  const [loadingCards, setLoadingCards] = useState(true);
 
   // Ownership state: { [cardId]: { ownerId: playerId, erections: 0..5 } }
-  // erections: 0 = base rent, 1 = 1 house, 2 = 2 houses, 3 = 3 houses, 4 = 4 houses, 5 = hotel
+  // Starts completely clean with zero placeholders!
   const [ownership, setOwnership] = useState({});
 
-  // Drawer modal for assigning cards to the currently selected player
-  const [isDeedDrawerOpen, setIsDeedDrawerOpen] = useState(false);
-  const [drawerPlayerId, setDrawerPlayerId] = useState(null);
+  const [activeModal, setActiveModal] = useState(null); // 'switchPlayer' | 'totalDeck' | 'remainingDeck' | 'trade' | 'loans' | 'log' | 'endGame' | 'addCard' | 'tradeCard'
+  const [tradeSelectedCardId, setTradeSelectedCardId] = useState(null);
+  const [tradeTargetPlayerId, setTradeTargetPlayerId] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [gameLogs, setGameLogs] = useState([
+    `Game session initialized with ${gamePlayers.length} players.`,
+    `Current turn: ${gamePlayers[0]?.name || 'Player 1'}.`,
+  ]);
 
-  // Filter for Master Ledger: 'all' | 'remaining' | 'owned'
-  const [ledgerFilter, setLedgerFilter] = useState('all');
-
+  // Fetch real properties directly from MongoDB Atlas via /api/properties
   useEffect(() => {
-    fetchCards();
+    fetchCardsFromDB();
   }, []);
 
-  const fetchCards = async () => {
+  const fetchCardsFromDB = async () => {
     try {
+      setLoadingCards(true);
       const res = await fetch('/api/properties');
       const data = await res.json();
-      if (data.success) {
-        setAllCards([...UTILITY_CARDS, ...data.data]);
+      if (data.success && Array.isArray(data.data)) {
+        setAllCards(data.data);
+        setGameLogs((prev) => [
+          `Connected to MongoDB Atlas: Loaded ${data.data.length} official properties.`,
+          ...prev,
+        ]);
       } else {
-        setAllCards([...UTILITY_CARDS]);
+        console.error('Failed to load properties:', data.error);
       }
     } catch (err) {
-      console.error('Failed to load cards:', err);
-      setAllCards([...UTILITY_CARDS]);
+      console.error('Error fetching cards from database:', err);
     } finally {
-      setLoading(false);
+      setLoadingCards(false);
     }
   };
 
-  // Helper to get card color gradient
-  const getColorGradient = (color) => {
-    const map = {
-      brown: 'linear-gradient(135deg, #8B4513 0%, #a0522d 100%)',
-      blue: 'linear-gradient(135deg, #1a73e8 0%, #4fc3f7 100%)',
-      pink: 'linear-gradient(135deg, #e91e8c 0%, #f48fb1 100%)',
-      safron: 'linear-gradient(135deg, #ff9933 0%, #ffcc02 100%)',
-      red: 'linear-gradient(135deg, #e60000 0%, #ff5252 100%)',
-      yellow: 'linear-gradient(135deg, #f5c518 0%, #ffe082 100%)',
-      green: 'linear-gradient(135deg, #0f9d58 0%, #66bb6a 100%)',
-      purple: 'linear-gradient(135deg, #7b2ff7 0%, #b388ff 100%)',
-    };
-    return map[color] || `linear-gradient(135deg, ${color} 0%, ${color} 100%)`;
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((prev) => (prev === msg ? null : prev));
+    }, 2400);
   };
 
-  // Get active owner of a card
-  const getCardOwner = (cardId) => {
-    const record = ownership[cardId];
-    if (!record || !record.ownerId) return null;
-    return players.find((p) => p.id === record.ownerId) || null;
+  const handleSwitchPlayer = (index) => {
+    setActivePlayerIndex(index);
+    setActiveModal(null);
+    const pName = gamePlayers[index]?.name || `Player ${index + 1}`;
+    setGameLogs((prev) => [`Switched active turn to ${pName}.`, ...prev]);
+    showToast(`Turn switched to ${pName}`);
   };
 
-  // Get erection level (0 to 5)
-  const getCardErections = (cardId) => {
-    return ownership[cardId]?.erections || 0;
+  // ================= ASSET VALUE CALCULATION =================
+  // Formula specified by user: 0.9 * (land value + no of erections * erection cost)
+  const calculatePlayerAssetValue = (playerId) => {
+    let rawTotal = 0;
+    allCards.forEach((card) => {
+      const own = ownership[card._id];
+      if (own && own.ownerId === playerId) {
+        const landValue = Number(card.buyingCost) || 0;
+        const erectionCount = Number(own.erections) || 0;
+        const erectionCost = Number(card.buildingCost) || 0;
+        rawTotal += landValue + (erectionCount * erectionCost);
+      }
+    });
+    return Math.round(0.9 * rawTotal);
   };
 
-  // Assign or transfer a card to a player
-  const assignCardToPlayer = (cardId, playerId) => {
+  // Calculate rent for a card given its erection level from DB fields
+  const getCardCurrentRent = (card, erections = 0) => {
+    if (card.type === 'station') {
+      const base = Number(card.rent1) || Number(card.baseRent) || 25;
+      return base * Math.max(1, erections);
+    }
+    if (card.type === 'utility') {
+      const base = Number(card.baseRent) || 10;
+      return base * (erections > 0 ? 10 : 4);
+    }
+    if (erections === 0) return Number(card.baseRent) || Number(card.rent1) || 0;
+    if (erections === 1) return Number(card.rent1) || (Number(card.baseRent) * 5) || 0;
+    if (erections === 2) return Number(card.rent2) || (Number(card.rent1) * 3) || 0;
+    if (erections === 3) return Number(card.rent3) || (Number(card.rent2) * 3) || 0;
+    if (erections === 4) return Number(card.rent4) || (Number(card.rent3) * 1.5) || 0;
+    if (erections === 5) return Number(card.hotelRent) || (Number(card.rent4) * 1.5) || 0;
+    return Number(card.baseRent) || 0;
+  };
+
+  // Add Card to Player Portfolio
+  const handleAddCardToPlayer = (cardId, playerId) => {
     setOwnership((prev) => ({
       ...prev,
-      [cardId]: {
-        ownerId: playerId,
-        erections: prev[cardId]?.erections || 0,
-      },
+      [cardId]: { ownerId: playerId, erections: 0 },
     }));
+    const card = allCards.find((c) => c._id === cardId);
+    const player = gamePlayers.find((p) => p.id === playerId);
+    setGameLogs((prev) => [`Banker granted ${card?.name} to ${player?.name}.`, ...prev]);
+    showToast(`Added ${card?.name} to ${player?.name}`);
+    setActiveModal(null);
   };
 
-  // Release a card back to the Bank (unowned)
-  const releaseCardToBank = (cardId) => {
+  // Take Back Card from Player to Bank
+  const handleTakeBackCard = (cardId) => {
+    const card = allCards.find((c) => c._id === cardId);
+    const currentOwner = gamePlayers.find((p) => p.id === ownership[cardId]?.ownerId);
     setOwnership((prev) => {
-      const updated = { ...prev };
-      delete updated[cardId];
-      return updated;
+      const next = { ...prev };
+      delete next[cardId];
+      return next;
     });
+    setGameLogs((prev) => [`Banker took back ${card?.name} from ${currentOwner?.name} to Bank Vault.`, ...prev]);
+    showToast(`Returned ${card?.name} to Bank Vault`);
   };
 
-  // Cool Method for Building: directly update erection level (0 to 5)
-  const setCardErections = (cardId, newLevel) => {
-    const clamped = Math.max(0, Math.min(5, newLevel));
-    setOwnership((prev) => {
-      const current = prev[cardId] || {};
-      return {
-        ...prev,
-        [cardId]: {
-          ...current,
-          erections: clamped,
-        },
-      };
-    });
+  // Trade Card from Player to Another Player
+  const handleTradeCard = (cardId, toPlayerId) => {
+    if (!toPlayerId) return;
+    const card = allCards.find((c) => c._id === cardId);
+    const fromPlayer = gamePlayers.find((p) => p.id === ownership[cardId]?.ownerId);
+    const toPlayer = gamePlayers.find((p) => p.id === Number(toPlayerId));
+
+    setOwnership((prev) => ({
+      ...prev,
+      [cardId]: { ...prev[cardId], ownerId: Number(toPlayerId) },
+    }));
+
+    setGameLogs((prev) => [`Traded ${card?.name} from ${fromPlayer?.name} to ${toPlayer?.name}.`, ...prev]);
+    showToast(`Traded ${card?.name} to ${toPlayer?.name}!`);
+    setActiveModal(null);
+    setTradeSelectedCardId(null);
+    setTradeTargetPlayerId(null);
   };
 
-  // Open the Deed Acquisition Drawer for a player
-  const openDeedDrawer = (playerId) => {
-    setDrawerPlayerId(playerId);
-    setIsDeedDrawerOpen(true);
+  // Increment/Decrement Erections on a card
+  const handleUpdateErections = (cardId, delta) => {
+    const current = ownership[cardId]?.erections || 0;
+    const nextVal = Math.max(0, Math.min(5, current + delta));
+    setOwnership((prev) => ({
+      ...prev,
+      [cardId]: { ...prev[cardId], erections: nextVal },
+    }));
+    const label = nextVal === 5 ? 'Hotel' : `${nextVal} houses`;
+    showToast(`Updated to ${label}`);
   };
 
-  // Calculation helpers
-  const getCardsOwnedByPlayer = (playerId) => {
-    return allCards.filter((card) => ownership[card._id]?.ownerId === playerId);
-  };
-
-  const remainingBankCards = allCards.filter(
-    (card) => !ownership[card._id] || !ownership[card._id].ownerId
-  );
-
-  const totalBuildingsOnBoard = Object.values(ownership).reduce(
-    (acc, val) => {
-      if (val.erections === 5) acc.hotels += 1;
-      else if (val.erections > 0) acc.houses += val.erections;
-      return acc;
-    },
-    { houses: 0, hotels: 0 }
-  );
-
-  // Compute current effective rent for a property card
-  const getCurrentRent = (card) => {
-    if (card.type === 'utility') return '4× / 10× Dice';
-    if (card.type === 'station') return `₹${card.rent1 || 25} (Base)`;
-    const erections = getCardErections(card._id);
-    if (erections === 0) return `₹${card.baseRent ?? 0}`;
-    if (erections === 1) return `₹${card.rent1 ?? 0}`;
-    if (erections === 2) return `₹${card.rent2 ?? 0}`;
-    if (erections === 3) return `₹${card.rent3 ?? 0}`;
-    if (erections === 4) return `₹${card.rent4 ?? 0}`;
-    if (erections === 5) return `₹${card.hotelRent ?? 0}`;
-    return `₹${card.baseRent ?? 0}`;
-  };
-
-  const selectedPlayer = players.find((p) => p.id === selectedPlayerId) || players[0];
-  const selectedPlayerDeeds = getCardsOwnedByPlayer(selectedPlayer?.id);
+  // Unowned cards in Bank Vault
+  const remainingCards = allCards.filter((card) => !ownership[card._id]);
+  const activePlayer = gamePlayers[activePlayerIndex] || gamePlayers[0];
+  const portfolioPlayer = gamePlayers.find((p) => p.id === viewingPortfolioPlayerId);
+  const portfolioCards = allCards.filter((card) => ownership[card._id]?.ownerId === viewingPortfolioPlayerId);
 
   return (
-    <div className="game-session-container">
-      {/* ================= TOP BANKER HEADER BAR ================= */}
-      <header className="banker-header-panel glass-panel">
-        <div className="banker-brand-group">
-          <button type="button" className="banker-menu-btn" onClick={onBackToHome}>
-            ← Main Menu
-          </button>
-          <div>
-            <h1 className="banker-title">Banker Desk &amp; Game Engine</h1>
-            <p className="banker-subtitle">
-              Live Assets, Interactive Construction Plots &amp; Master Board Ledger
-            </p>
-          </div>
-        </div>
+    <div className="mobile-game-wrapper">
+      {/* Background ambient lighting */}
+      <div className="ambient-backdrop-glow glow-top" />
+      <div className="ambient-backdrop-glow glow-bottom" />
 
-        {/* Global Live Statistics */}
-        <div className="banker-stats-pills">
-          <div className="stat-pill">
-            <span className="pill-label">Total Deeds</span>
-            <span className="pill-val">{allCards.length}</span>
-          </div>
-          <div className="stat-pill highlight-pill">
-            <span className="pill-label">In Bank Vault</span>
-            <span className="pill-val">{remainingBankCards.length}</span>
-          </div>
-          <div className="stat-pill">
-            <span className="pill-label">Player Owned</span>
-            <span className="pill-val">{allCards.length - remainingBankCards.length}</span>
-          </div>
-          <div className="stat-pill houses-pill">
-            <span className="pill-label">Buildings</span>
-            <span className="pill-val">
-              {totalBuildingsOnBoard.houses}🏠 | {totalBuildingsOnBoard.hotels}🏨
-            </span>
-          </div>
-        </div>
+      {/* =========================================================================
+          VIEW A: MAIN PLAYER BOXES ARENA (When viewingPortfolioPlayerId is null)
+          ========================================================================= */}
+      {viewingPortfolioPlayerId === null && (
+        <>
+          {/* FLOATING GLASS NAVBAR */}
+          <nav className="game-navbar-wrapper">
+            <div className="game-navbar">
+              <button
+                type="button"
+                className="nav-item-btn"
+                onClick={() => setActiveModal('switchPlayer')}
+                title="Switch Active Player"
+              >
+                <span className="nav-icon">🔄</span>
+                <span>Switch Player</span>
+              </button>
 
-        {/* Navigation Tabs */}
-        <div className="banker-tab-nav">
-          <button
-            type="button"
-            className={`tab-btn ${activeTab === 'players' ? 'active' : ''}`}
-            onClick={() => setActiveTab('players')}
-          >
-            👥 Player Portfolios
-          </button>
-          <button
-            type="button"
-            className={`tab-btn ${activeTab === 'ledger' ? 'active' : ''}`}
-            onClick={() => setActiveTab('ledger')}
-          >
-            📋 Master Ledger ({allCards.length})
-          </button>
-          <button
-            type="button"
-            className={`tab-btn ${activeTab === 'bank' ? 'active' : ''}`}
-            onClick={() => setActiveTab('bank')}
-          >
-            🏦 Remaining in Bank ({remainingBankCards.length})
-          </button>
-        </div>
-      </header>
+              <button
+                type="button"
+                className="nav-item-btn"
+                onClick={() => setActiveModal('totalDeck')}
+                title="View Total Deck"
+              >
+                <span className="nav-icon">🎴</span>
+                <span>Total Deck ({allCards.length})</span>
+              </button>
 
-      {/* ================= TAB 1: PLAYER PORTFOLIOS ================= */}
-      {activeTab === 'players' && (
-        <div className="session-content-layout">
-          {/* Left: Player Selector Carousel / Tabs */}
-          <div className="players-sidebar glass-panel">
-            <h3 className="sidebar-heading">Active Players</h3>
-            <div className="player-tabs-vertical">
-              {players.map((p) => {
-                const deedsCount = getCardsOwnedByPlayer(p.id).length;
-                const isSelected = p.id === selectedPlayerId;
+              <button
+                type="button"
+                className="nav-item-btn"
+                onClick={() => setActiveModal('remainingDeck')}
+                title="View Remaining Deck"
+              >
+                <span className="nav-icon">🏦</span>
+                <span>Remaining Deck ({remainingCards.length})</span>
+              </button>
+
+              <button
+                type="button"
+                className="nav-item-btn nav-btn-locked"
+                onClick={() => showToast('🔒 Trade feature is locked (Coming soon)')}
+                title="Trade Properties (Locked)"
+              >
+                <span className="nav-icon">🤝</span>
+                <span>Trade (Locked)</span>
+              </button>
+
+              <button
+                type="button"
+                className="nav-item-btn"
+                onClick={() => setActiveModal('loans')}
+                title="Bank Loans"
+              >
+                <span className="nav-icon">💰</span>
+                <span>Loans</span>
+              </button>
+
+              <button
+                type="button"
+                className="nav-item-btn"
+                onClick={() => setActiveModal('log')}
+                title="Game Logs"
+              >
+                <span className="nav-icon">📋</span>
+                <span>Log</span>
+              </button>
+
+              <button
+                type="button"
+                className="nav-item-btn nav-btn-end"
+                onClick={() => setActiveModal('endGame')}
+                title="End Game Session"
+              >
+                <span className="nav-icon">🚪</span>
+                <span>End Game</span>
+              </button>
+            </div>
+          </nav>
+
+          {/* MAIN PLAYER BOXES CONTAINER (Tap opens Portfolio!) */}
+          <main className="player-boxes-stage" style={{ '--player-count': gamePlayers.length }}>
+            <div className="cards-deck-container">
+              {gamePlayers.map((player, index) => {
+                const theme = PLAYER_THEMES[index % PLAYER_THEMES.length];
+                const isActive = index === activePlayerIndex;
+                const assetVal = calculatePlayerAssetValue(player.id);
+                const cardCount = allCards.filter((c) => ownership[c._id]?.ownerId === player.id).length;
+
                 return (
                   <div
-                    key={p.id}
-                    className={`player-tab-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => setSelectedPlayerId(p.id)}
+                    key={player.id || index}
+                    className={`player-box-card ${isActive ? 'is-active-turn' : ''}`}
+                    style={{
+                      background: theme.bg,
+                      '--card-glow': theme.glow,
+                    }}
+                    onClick={() => {
+                      // Tap box to open this player's portfolio page!
+                      setViewingPortfolioPlayerId(player.id);
+                    }}
+                    title={`Tap to view ${player.name}'s Portfolio`}
                   >
-                    <div className="player-tab-header">
-                      <span className="player-tab-token">{p.token.icon}</span>
-                      <div className="player-tab-info">
-                        <span className="player-tab-order">Turn #{p.turnOrder || p.id}</span>
-                        <h4 className="player-tab-name">{p.name}</h4>
-                      </div>
-                    </div>
-                    <div className="player-tab-stats">
-                      <span className="asset-count-badge">
-                        {deedsCount} {deedsCount === 1 ? 'Deed' : 'Deeds'}
+                    {/* Glossy Reflection Sheen */}
+                    <div className="card-sheen-glare" />
+
+                    {/* Card Header */}
+                    <div className="card-header-accent">
+                      <span className="card-token-icon">
+                        {player.token?.icon || theme.token}
                       </span>
-                      {isSelected && <span className="viewing-pill">Viewing</span>}
+                      {isActive && (
+                        <span className="card-active-pill">
+                          👑 TURN
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Player Name Centerpiece */}
+                    <div className="card-name-wrapper">
+                      <h2 className="player-box-name">{player.name}</h2>
+                      <span className="card-preview-subtitle">
+                        {cardCount} Deeds • ₹{assetVal} Asset
+                      </span>
+                    </div>
+
+                    {/* Tap hint footer */}
+                    <div className="card-footer-groove">
+                      <span className="tap-portfolio-hint">Tap for Portfolio →</span>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </main>
+        </>
+      )}
 
-          {/* Right: Selected Player Portfolio & Deeds */}
-          <div className="player-portfolio-main glass-panel">
-            {selectedPlayer && (
-              <>
-                {/* Player Banner */}
-                <div className="portfolio-banner">
-                  <div className="banner-left">
-                    <span className="banner-big-token">{selectedPlayer.token.icon}</span>
-                    <div>
-                      <div className="banner-order-tag">
-                        Playing Position: Turn #{selectedPlayer.turnOrder || selectedPlayer.id}
+      {/* =========================================================================
+          VIEW B: DEDICATED PLAYER PORTFOLIO SCREEN (When viewingPortfolioPlayerId is set)
+          ========================================================================= */}
+      {viewingPortfolioPlayerId !== null && portfolioPlayer && (
+        <div className="portfolio-screen-view">
+          {/* PORTFOLIO TOP NAVBAR */}
+          <nav className="portfolio-navbar">
+            <button
+              type="button"
+              className="portfolio-back-btn"
+              onClick={() => setViewingPortfolioPlayerId(null)}
+              title="Return to Main Board"
+            >
+              ← Back
+            </button>
+
+            {/* Player Switcher Chips */}
+            <div className="portfolio-player-pill">
+              <span className="player-pill-token">
+                {portfolioPlayer.token?.icon || '👤'}
+              </span>
+              <span className="player-pill-name">{portfolioPlayer.name}</span>
+            </div>
+
+            {/* Asset Value Tag: 0.9 * (land + erections * buildingCost) */}
+            <div className="portfolio-asset-tag">
+              <span className="asset-tag-label">0.9x Asset Value</span>
+              <span className="asset-tag-value">
+                ₹{calculatePlayerAssetValue(portfolioPlayer.id)}
+              </span>
+            </div>
+
+            {/* Banker Actions in Navbar */}
+            <div className="portfolio-navbar-actions">
+              <button
+                type="button"
+                className="portfolio-nav-action-btn btn-add-card"
+                onClick={() => setActiveModal('addCard')}
+                title="Banker: Add Property from Database to Portfolio"
+              >
+                ➕ Add Card
+              </button>
+
+              <button
+                type="button"
+                className="portfolio-nav-action-btn"
+                onClick={() => {
+                  if (portfolioCards.length === 0) {
+                    showToast('No cards to trade in this portfolio!');
+                  } else {
+                    setActiveModal('tradeCard');
+                  }
+                }}
+                title="Trade a card to another player"
+              >
+                🔄 Trade Card
+              </button>
+            </div>
+          </nav>
+
+          {/* MAIN SCREEN: CAROUSEL OF CARDS OWNED BY THIS PLAYER */}
+          <main className="portfolio-carousel-stage">
+            {loadingCards ? (
+              <div className="portfolio-empty-state">
+                <div className="empty-state-icon">⏳</div>
+                <h3>Loading Database Properties...</h3>
+                <p>Connecting securely to MongoDB Atlas...</p>
+              </div>
+            ) : portfolioCards.length === 0 ? (
+              <div className="portfolio-empty-state">
+                <div className="empty-state-icon">📜</div>
+                <h3>{portfolioPlayer.name} Has No Deeds Yet</h3>
+                <p>The banker can grant available properties from the Bank Vault ({remainingCards.length} in vault).</p>
+                <button
+                  type="button"
+                  className="empty-state-add-btn"
+                  onClick={() => setActiveModal('addCard')}
+                >
+                  ➕ Add First Property
+                </button>
+              </div>
+            ) : (
+              <div className="deeds-carousel-track">
+                {portfolioCards.map((card) => {
+                  const cardOwn = ownership[card._id] || { erections: 0 };
+                  const erections = cardOwn.erections || 0;
+                  const currentRent = getCardCurrentRent(card, erections);
+                  const canErect = card.type === 'property' && (Number(card.buildingCost) || 0) > 0;
+                  const erectionCost = Number(card.buildingCost) || 0;
+                  const singleCardAssetVal = Math.round(0.9 * ((Number(card.buyingCost) || 0) + (erections * erectionCost)));
+                  const bannerColor = normalizeCardColor(card.color, card.type);
+
+                  return (
+                    <div key={card._id} className="deed-carousel-card">
+                      {/* Top Color Banner */}
+                      <div
+                        className="deed-card-banner"
+                        style={{ backgroundColor: bannerColor }}
+                      >
+                        <span className="banner-type-tag">
+                          {card.type === 'station' ? '🚂 RAILWAY STATION' : card.type === 'utility' ? '⚡ UTILITY' : 'TITLE DEED'}
+                        </span>
+                        <h3 className="banner-card-name">{card.name}</h3>
                       </div>
-                      <h2 className="banner-player-name">{selectedPlayer.name}&rsquo;s Asset Deck</h2>
-                      <p className="banner-hint">
-                        Properties owned, rent rates, and interactive architectural building plots.
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Add Deed Slot (Cool method: Clicking opens the Deed Vault Drawer) */}
-                  <div
-                    className="add-deed-slot-card"
-                    onClick={() => openDeedDrawer(selectedPlayer.id)}
-                    title="Click to acquire a property for this player"
-                  >
-                    <span className="add-slot-sparkle">✨</span>
-                    <span className="add-slot-text">Acquire Deed from Bank</span>
-                    <span className="add-slot-sub">
-                      ({remainingBankCards.length} available)
-                    </span>
-                  </div>
-                </div>
+                      {/* Card Content Body */}
+                      <div className="deed-card-body">
+                        {/* Current Rent Highlight */}
+                        <div className="deed-rent-box">
+                          <span className="rent-box-label">CURRENT RENT</span>
+                          <span className="rent-box-amount">₹{currentRent}</span>
+                        </div>
 
-                {/* List of Owned Deeds */}
-                <div className="portfolio-deeds-section">
-                  {selectedPlayerDeeds.length === 0 ? (
-                    <div className="empty-portfolio-box">
-                      <span className="empty-icon">📜</span>
-                      <h3>No Properties Claimed Yet</h3>
-                      <p>
-                        When {selectedPlayer.name} lands on a place and purchases it from the bank,
-                        click the <strong>&ldquo;Acquire Deed from Bank&rdquo;</strong> box above to assign it!
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="deeds-interactive-grid">
-                      {selectedPlayerDeeds.map((card) => {
-                        const erections = getCardErections(card._id);
-                        const isProperty = card.type === 'property' || !card.type;
+                        {/* Erection Stepper (Houses / Hotel) */}
+                        {canErect && (
+                          <div className="deed-erection-section">
+                            <div className="erection-title-row">
+                              <span className="erection-label">Houses / Hotel:</span>
+                              <span className="erection-cost-hint">₹{erectionCost}/house</span>
+                            </div>
 
-                        return (
-                          <div key={card._id} className="game-property-card">
-                            {/* Color Band */}
-                            <div
-                              className="card-color-band"
-                              style={{
-                                background:
-                                  card.type === 'utility'
-                                    ? 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)'
-                                    : card.type === 'station'
-                                      ? 'linear-gradient(135deg, #232526, #414345)'
-                                      : getColorGradient(card.color),
-                              }}
-                            >
-                              {/* Release to Bank action */}
+                            <div className="erection-stepper">
                               <button
                                 type="button"
-                                className="deed-release-btn"
-                                title="Release deed back to Bank Vault"
-                                onClick={() => releaseCardToBank(card._id)}
+                                className="stepper-btn"
+                                onClick={() => handleUpdateErections(card._id, -1)}
+                                disabled={erections <= 0}
                               >
-                                ↩ Bank
+                                –
                               </button>
-                              <h4 className="card-name">{card.name}</h4>
-                              <span className="card-badge">
-                                {card.type === 'station'
-                                  ? 'STATION'
-                                  : card.type === 'utility'
-                                    ? 'UTILITY'
-                                    : 'TITLE DEED'}
-                              </span>
-                            </div>
 
-                            {/* Card Body */}
-                            <div className="card-details">
-                              {/* Live Rent Banner */}
-                              <div className="live-rent-banner">
-                                <span className="rent-tag">Current Rent:</span>
-                                <span className="rent-amount">{getCurrentRent(card)}</span>
+                              <div className="stepper-indicator">
+                                {erections === 0 && <span className="erection-zero">Plot Only</span>}
+                                {erections > 0 && erections < 5 && (
+                                  <span className="erection-houses">
+                                    {'🏠'.repeat(erections)} ({erections}H)
+                                  </span>
+                                )}
+                                {erections === 5 && (
+                                  <span className="erection-hotel">🏨 Hotel</span>
+                                )}
                               </div>
 
-                              {/* COOL METHOD: Interactive 3D Construction Bay for Properties */}
-                              {isProperty && (
-                                <div className="construction-bay-box">
-                                  <div className="construction-bay-header">
-                                    <span className="bay-title">Erections Plot</span>
-                                    <span className="bay-status">
-                                      {erections === 0 && 'Base (No Building)'}
-                                      {erections >= 1 && erections <= 4 && `${erections} 🏠 Erected`}
-                                      {erections === 5 && '🏨 Grand Hotel'}
-                                    </span>
-                                  </div>
-
-                                  {/* 5 Architectural Sockets (Clicking slot toggles/sets that level) */}
-                                  <div className="construction-sockets-row">
-                                    {[1, 2, 3, 4].map((slotNum) => {
-                                      const isBuilt = erections >= slotNum;
-                                      return (
-                                        <div
-                                          key={slotNum}
-                                          className={`construction-socket house-socket ${isBuilt ? 'built' : 'empty'
-                                            }`}
-                                          onClick={() =>
-                                            setCardErections(
-                                              card._id,
-                                              erections === slotNum ? slotNum - 1 : slotNum
-                                            )
-                                          }
-                                          title={
-                                            isBuilt
-                                              ? `Tap to demolish house ${slotNum}`
-                                              : `Tap to build up to house ${slotNum}`
-                                          }
-                                        >
-                                          {isBuilt ? '🏠' : <span className="plot-dot" />}
-                                          <span className="socket-num">{slotNum}</span>
-                                        </div>
-                                      );
-                                    })}
-
-                                    {/* 5th slot: Hotel Crown */}
-                                    <div
-                                      className={`construction-socket hotel-socket ${erections === 5 ? 'built hotel-active' : 'empty'
-                                        }`}
-                                      onClick={() =>
-                                        setCardErections(card._id, erections === 5 ? 4 : 5)
-                                      }
-                                      title={
-                                        erections === 5
-                                          ? 'Tap to downgrade to 4 houses'
-                                          : 'Tap to upgrade to Grand Hotel'
-                                      }
-                                    >
-                                      {erections === 5 ? '🏨' : '👑'}
-                                      <span className="socket-num">Hotel</span>
-                                    </div>
-                                  </div>
-
-                                  {/* Tactile Construction Slider */}
-                                  <div className="tactile-slider-wrap">
-                                    <input
-                                      type="range"
-                                      min="0"
-                                      max="5"
-                                      value={erections}
-                                      className="tactile-range-input"
-                                      onChange={(e) =>
-                                        setCardErections(card._id, Number(e.target.value))
-                                      }
-                                    />
-                                    <div className="slider-ticks">
-                                      <span>0</span>
-                                      <span>1🏠</span>
-                                      <span>2🏠</span>
-                                      <span>3🏠</span>
-                                      <span>4🏠</span>
-                                      <span>🏨</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Rent Rates reference list */}
-                              {isProperty && (
-                                <div className="compact-rent-list">
-                                  <div className={`mini-rent-row ${erections === 0 ? 'active' : ''}`}>
-                                    <span>Base Rent</span>
-                                    <strong>₹{card.baseRent ?? 0}</strong>
-                                  </div>
-                                  <div className={`mini-rent-row ${erections === 1 ? 'active' : ''}`}>
-                                    <span>1 House</span>
-                                    <strong>₹{card.rent1 ?? 0}</strong>
-                                  </div>
-                                  <div className={`mini-rent-row ${erections === 2 ? 'active' : ''}`}>
-                                    <span>2 Houses</span>
-                                    <strong>₹{card.rent2 ?? 0}</strong>
-                                  </div>
-                                  <div className={`mini-rent-row ${erections === 3 ? 'active' : ''}`}>
-                                    <span>3 Houses</span>
-                                    <strong>₹{card.rent3 ?? 0}</strong>
-                                  </div>
-                                  <div className={`mini-rent-row ${erections === 4 ? 'active' : ''}`}>
-                                    <span>4 Houses</span>
-                                    <strong>₹{card.rent4 ?? 0}</strong>
-                                  </div>
-                                  <div className={`mini-rent-row ${erections === 5 ? 'active hotel' : ''}`}>
-                                    <span>🏨 Hotel</span>
-                                    <strong>₹{card.hotelRent ?? 0}</strong>
-                                  </div>
-                                </div>
-                              )}
-
-                              {card.type === 'station' && (
-                                <div className="station-rates-box">
-                                  <div className="mini-rent-row"><span>1 Station</span><strong>₹{card.rent1}</strong></div>
-                                  <div className="mini-rent-row"><span>2 Stations</span><strong>₹{card.rent2}</strong></div>
-                                  <div className="mini-rent-row"><span>3 Stations</span><strong>₹{card.rent3}</strong></div>
-                                  <div className="mini-rent-row"><span>4 Stations</span><strong>₹{card.rent4}</strong></div>
-                                </div>
-                              )}
-
-                              {card.type === 'utility' && (
-                                <div className="card-rule-box">
-                                  <p>1 Utility = <strong>4×</strong> dice</p>
-                                  <p>2 Utilities = <strong>10×</strong> dice</p>
-                                </div>
-                              )}
-
-                              <div className="detail-row mortgage-row">
-                                <span>Mortgage Value</span>
-                                <span className="detail-value">₹{card.mortgage}</span>
-                              </div>
+                              <button
+                                type="button"
+                                className="stepper-btn"
+                                onClick={() => handleUpdateErections(card._id, 1)}
+                                disabled={erections >= 5}
+                              >
+                                +
+                              </button>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+                        )}
 
-      {/* ================= TAB 2: BANKER MASTER LEDGER ================= */}
-      {activeTab === 'ledger' && (
-        <div className="ledger-full-layout glass-panel">
-          <div className="ledger-header">
-            <div>
-              <h2 className="ledger-title">📋 Master Cards Ledger &amp; Board Audit</h2>
-              <p className="ledger-sub">
-                Track all {allCards.length} cards, active owners, building erection levels, and current rents.
-              </p>
-            </div>
+                        {/* Single Card 0.9x Asset Breakdown */}
+                        <div className="deed-asset-breakdown">
+                          <span>Deed Asset: <strong>₹{singleCardAssetVal}</strong></span>
+                          <span className="formula-hint">0.9×(₹{card.buyingCost} + {erections}×₹{erectionCost})</span>
+                        </div>
 
-            {/* Filter buttons */}
-            <div className="ledger-filter-row">
-              <button
-                type="button"
-                className={`ledger-filter-btn ${ledgerFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setLedgerFilter('all')}
-              >
-                All Cards ({allCards.length})
-              </button>
-              <button
-                type="button"
-                className={`ledger-filter-btn ${ledgerFilter === 'owned' ? 'active' : ''}`}
-                onClick={() => setLedgerFilter('owned')}
-              >
-                Player Owned ({allCards.length - remainingBankCards.length})
-              </button>
-              <button
-                type="button"
-                className={`ledger-filter-btn ${ledgerFilter === 'remaining' ? 'active' : ''}`}
-                onClick={() => setLedgerFilter('remaining')}
-              >
-                In Bank Vault ({remainingBankCards.length})
-              </button>
-            </div>
-          </div>
-
-          {/* Master Table / Grid */}
-          <div className="ledger-table-wrap">
-            <table className="ledger-table">
-              <thead>
-                <tr>
-                  <th>Card Name</th>
-                  <th>Type</th>
-                  <th>Cost</th>
-                  <th>Current Owner</th>
-                  <th>Erections Level</th>
-                  <th>Active Rent</th>
-                  <th>Transfer / Manage</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allCards
-                  .filter((card) => {
-                    const owner = getCardOwner(card._id);
-                    if (ledgerFilter === 'owned') return Boolean(owner);
-                    if (ledgerFilter === 'remaining') return !owner;
-                    return true;
-                  })
-                  .map((card) => {
-                    const owner = getCardOwner(card._id);
-                    const erections = getCardErections(card._id);
-                    const isProperty = card.type === 'property' || !card.type;
-
-                    return (
-                      <tr key={card._id} className={owner ? 'row-owned' : 'row-bank'}>
-                        {/* Name & Color swatch */}
-                        <td className="cell-card-name">
-                          <span
-                            className="color-swatch"
-                            style={{
-                              background:
-                                card.type === 'station'
-                                  ? '#414345'
-                                  : card.type === 'utility'
-                                    ? '#302b63'
-                                    : getColorGradient(card.color),
-                            }}
-                          />
-                          <span className="card-title-text">{card.name}</span>
-                        </td>
-
-                        {/* Type */}
-                        <td>
-                          <span className="type-chip">
-                            {card.type === 'station'
-                              ? '🚂 Station'
-                              : card.type === 'utility'
-                                ? '⚡ Utility'
-                                : '🏙️ Property'}
-                          </span>
-                        </td>
-
-                        {/* Cost */}
-                        <td className="cell-num">₹{card.buyingCost}</td>
-
-                        {/* Current Owner */}
-                        <td>
-                          {owner ? (
-                            <div className="owner-badge">
-                              <span className="owner-icon">{owner.token.icon}</span>
-                              <span className="owner-name">{owner.name}</span>
-                              <span className="owner-turn">Turn #{owner.turnOrder || owner.id}</span>
-                            </div>
-                          ) : (
-                            <span className="bank-reserve-tag">🏦 In Bank</span>
-                          )}
-                        </td>
-
-                        {/* Erections Level */}
-                        <td>
-                          {isProperty ? (
-                            <div className="erection-status-cell">
-                              {erections === 0 && <span className="status-dim">0 Houses</span>}
-                              {erections >= 1 && erections <= 4 && (
-                                <span className="status-houses">
-                                  {erections} 🏠 ({erections} Houses)
-                                </span>
-                              )}
-                              {erections === 5 && (
-                                <span className="status-hotel">🏨 Grand Hotel</span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="status-dim">N/A</span>
-                          )}
-                        </td>
-
-                        {/* Active Rent */}
-                        <td className="cell-rent">{getCurrentRent(card)}</td>
-
-                        {/* Action: Quick assign/transfer */}
-                        <td>
-                          <select
-                            className="ledger-assign-select"
-                            value={owner?.id || 'bank'}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === 'bank') releaseCardToBank(card._id);
-                              else assignCardToPlayer(card._id, Number(val));
+                        {/* Action Buttons: Trade & Return to Bank */}
+                        <div className="deed-card-actions">
+                          <button
+                            type="button"
+                            className="deed-action-btn btn-trade"
+                            onClick={() => {
+                              setTradeSelectedCardId(card._id);
+                              setActiveModal('tradeCard');
                             }}
                           >
-                            <option value="bank">🏦 Bank Vault</option>
-                            {players.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.token.icon} {p.name}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                            🤝 Trade Card
+                          </button>
 
-      {/* ================= TAB 3: REMAINING CARDS (BANK VAULT) ================= */}
-      {activeTab === 'bank' && (
-        <div className="bank-vault-layout glass-panel">
-          <div className="vault-header">
-            <div>
-              <h2 className="vault-title">🏦 Bank Vault — Remaining Cards ({remainingBankCards.length})</h2>
-              <p className="vault-sub">
-                These cards are unpurchased and currently in the bank stock. Tap any card to assign it to a player!
-              </p>
-            </div>
-          </div>
-
-          {remainingBankCards.length === 0 ? (
-            <div className="empty-vault-box">
-              <span>🎉</span>
-              <h3>All Deeds Owned!</h3>
-              <p>Every single property on the board has been purchased by the players.</p>
-            </div>
-          ) : (
-            <div className="vault-cards-grid">
-              {remainingBankCards.map((card) => (
-                <div key={card._id} className="vault-card-item">
-                  <div
-                    className="vault-card-banner"
-                    style={{
-                      background:
-                        card.type === 'station'
-                          ? 'linear-gradient(135deg, #232526, #414345)'
-                          : card.type === 'utility'
-                            ? 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)'
-                            : getColorGradient(card.color),
-                    }}
-                  >
-                    <span className="vault-card-name">{card.name}</span>
-                    <span className="vault-card-cost">₹{card.buyingCost}</span>
-                  </div>
-
-                  <div className="vault-card-body">
-                    <div className="vault-base-rent">
-                      <span>Base Rent:</span>
-                      <strong>₹{card.baseRent ?? card.rent1 ?? 0}</strong>
+                          <button
+                            type="button"
+                            className="deed-action-btn btn-takeback"
+                            onClick={() => handleTakeBackCard(card._id)}
+                            title="Banker takes card back to Bank Vault"
+                          >
+                            🏦 Return to Bank
+                          </button>
+                        </div>
+                      </div>
                     </div>
-
-                    {/* Quick Assign Dropdown */}
-                    <div className="vault-assign-row">
-                      <label>Give to:</label>
-                      <select
-                        className="vault-player-select"
-                        defaultValue=""
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            assignCardToPlayer(card._id, Number(e.target.value));
-                          }
-                        }}
-                      >
-                        <option value="" disabled>
-                          Select Player...
-                        </option>
-                        {players.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.token.icon} {p.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ================= MODAL DRAWER: DEED ACQUISITION ================= */}
-      {isDeedDrawerOpen && (
-        <div className="drawer-backdrop" onClick={() => setIsDeedDrawerOpen(false)}>
-          <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="drawer-header">
-              <div>
-                <h3 className="drawer-title">
-                  Assign Deed to{' '}
-                  {players.find((p) => p.id === drawerPlayerId)?.name}
-                </h3>
-                <p className="drawer-sub">
-                  Select any available property from the Bank Vault to add to this player&rsquo;s asset deck:
-                </p>
+                  );
+                })}
               </div>
+            )}
+          </main>
+        </div>
+      )}
+
+      {/* ================= TOAST NOTIFICATION ================= */}
+      {toastMessage && (
+        <div className="floating-toast">
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* ================= MODAL: ADD CARD TO PORTFOLIO FROM DB ================= */}
+      {activeModal === 'addCard' && viewingPortfolioPlayerId && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Add Database Deed to {portfolioPlayer?.name}&rsquo;s Portfolio</h3>
               <button
                 type="button"
-                className="drawer-close-btn"
-                onClick={() => setIsDeedDrawerOpen(false)}
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
               >
                 ✕
               </button>
             </div>
+            <p className="modal-description">
+              Select any available property from the Bank Vault ({remainingCards.length} remaining in DB):
+            </p>
 
-            {remainingBankCards.length === 0 ? (
-              <div className="drawer-empty">
-                <p>No remaining properties in the Bank Vault.</p>
-              </div>
+            {remainingCards.length === 0 ? (
+              <div className="modal-empty-state">No unowned cards remaining in the Bank Vault!</div>
             ) : (
-              <div className="drawer-cards-list">
-                {remainingBankCards.map((card) => (
-                  <div
-                    key={card._id}
-                    className="drawer-card-choice"
-                    onClick={() => {
-                      assignCardToPlayer(card._id, drawerPlayerId);
-                      setIsDeedDrawerOpen(false);
-                    }}
-                  >
+              <div className="modal-cards-grid">
+                {remainingCards.map((card) => {
+                  const bColor = normalizeCardColor(card.color, card.type);
+                  return (
                     <div
-                      className="choice-color-strip"
-                      style={{
-                        background:
-                          card.type === 'station'
-                            ? '#414345'
-                            : card.type === 'utility'
-                              ? '#302b63'
-                              : getColorGradient(card.color),
-                      }}
-                    />
-                    <div className="choice-info">
-                      <h4 className="choice-name">{card.name}</h4>
-                      <span className="choice-cost">Buy Cost: ₹{card.buyingCost}</span>
+                      key={card._id}
+                      className="deck-card-item card-clickable"
+                      onClick={() => handleAddCardToPlayer(card._id, viewingPortfolioPlayerId)}
+                    >
+                      <div className="card-color-strip" style={{ backgroundColor: bColor }} />
+                      <div className="deck-card-info">
+                        <span className="card-name">{card.name}</span>
+                        <span className="card-cost">₹{card.buyingCost}</span>
+                      </div>
+                      <span className="card-rent">Rent: ₹{card.baseRent || card.rent1 || 0}</span>
+                      <button type="button" className="card-claim-chip">
+                        + Add to {portfolioPlayer?.name}
+                      </button>
                     </div>
-                    <div className="choice-action-badge">
-                      Claim Deed →
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: TRADE CARD TO ANOTHER PLAYER ================= */}
+      {activeModal === 'tradeCard' && viewingPortfolioPlayerId && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Trade Property from {portfolioPlayer?.name}</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="modal-description">
+              Select the deed to transfer and the receiving player:
+            </p>
+
+            {/* Select Card to trade */}
+            <div className="trade-select-group">
+              <label>1. Select Deed to Trade:</label>
+              <select
+                className="trade-dropdown"
+                value={tradeSelectedCardId || (portfolioCards[0]?._id || '')}
+                onChange={(e) => setTradeSelectedCardId(e.target.value)}
+              >
+                {portfolioCards.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name} (Value: ₹{c.buyingCost})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Select Target Player */}
+            <div className="trade-select-group">
+              <label>2. Transfer To Player:</label>
+              <select
+                className="trade-dropdown"
+                value={tradeTargetPlayerId || ''}
+                onChange={(e) => setTradeTargetPlayerId(e.target.value)}
+              >
+                <option value="" disabled>Select Target Player...</option>
+                {gamePlayers
+                  .filter((p) => p.id !== viewingPortfolioPlayerId)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.token?.icon || '👤'} {p.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div className="trade-actions-row">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => setActiveModal(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-confirm-trade"
+                disabled={!tradeTargetPlayerId}
+                onClick={() => {
+                  const cardId = tradeSelectedCardId || portfolioCards[0]?._id;
+                  handleTradeCard(cardId, tradeTargetPlayerId);
+                }}
+              >
+                Complete Trade 🤝
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: SWITCH PLAYER ================= */}
+      {activeModal === 'switchPlayer' && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Switch Active Player</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="modal-description">Select the player whose turn it is now:</p>
+            <div className="modal-players-list">
+              {gamePlayers.map((p, idx) => {
+                const theme = PLAYER_THEMES[idx % PLAYER_THEMES.length];
+                return (
+                  <button
+                    key={p.id || idx}
+                    type="button"
+                    className={`modal-player-choice ${idx === activePlayerIndex ? 'current-active' : ''}`}
+                    style={{ borderLeftColor: theme.glow }}
+                    onClick={() => handleSwitchPlayer(idx)}
+                  >
+                    <span className="choice-name">
+                      {p.token?.icon || theme.token} {p.name}
+                    </span>
+                    {idx === activePlayerIndex && <span className="active-badge">Current Turn</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: TOTAL DECK (FROM DB) ================= */}
+      {activeModal === 'totalDeck' && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Official Database Card Deck ({allCards.length})</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="modal-description">All properties loaded from MongoDB Atlas:</p>
+            <div className="modal-cards-grid">
+              {allCards.map((card) => {
+                const owner = gamePlayers.find((p) => p.id === ownership[card._id]?.ownerId);
+                const bColor = normalizeCardColor(card.color, card.type);
+                return (
+                  <div key={card._id} className="deck-card-item">
+                    <div className="card-color-strip" style={{ backgroundColor: bColor }} />
+                    <div className="deck-card-info">
+                      <span className="card-name">{card.name}</span>
+                      <span className="card-cost">₹{card.buyingCost}</span>
+                    </div>
+                    <span className="card-rent">Rent: ₹{card.baseRent || card.rent1 || 0}</span>
+                    <span className="card-owner-tag">
+                      {owner ? `Owned by ${owner.name}` : 'In Bank Vault'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: REMAINING DECK (FROM DB) ================= */}
+      {activeModal === 'remainingDeck' && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Remaining Bank Deck ({remainingCards.length})</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="modal-description">Unowned property cards currently held in Bank Vault:</p>
+            {remainingCards.length === 0 ? (
+              <div className="modal-empty-state">All database properties are currently owned by players!</div>
+            ) : (
+              <div className="modal-cards-grid">
+                {remainingCards.map((card) => {
+                  const bColor = normalizeCardColor(card.color, card.type);
+                  return (
+                    <div key={card._id} className="deck-card-item">
+                      <div className="card-color-strip" style={{ backgroundColor: bColor }} />
+                      <div className="deck-card-info">
+                        <span className="card-name">{card.name}</span>
+                        <span className="card-cost">₹{card.buyingCost}</span>
+                      </div>
+                      <span className="card-rent">Rent: ₹{card.baseRent || card.rent1 || 0}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: LOANS ================= */}
+      {activeModal === 'loans' && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Bank Loans</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="modal-description">
+              Borrow capital from the Bank against your mortgaged deeds.
+            </p>
+            <div className="loan-placeholder-panel">
+              <div className="loan-icon">🏦</div>
+              <h4>Bank Lending Desk</h4>
+              <p>Player: <strong>{activePlayer.name}</strong></p>
+              <p className="loan-note">
+                Loan interest rate: 10% on repayment.<br />
+                Mortgage properties to release 50% property value.
+              </p>
+              <button
+                type="button"
+                className="loan-action-btn"
+                onClick={() => {
+                  showToast('Loan desk feature will be connected in next phase!');
+                  setActiveModal(null);
+                }}
+              >
+                Request ₹500 Emergency Cash
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: GAME LOG ================= */}
+      {activeModal === 'log' && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Game Activity Log</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="log-entries-list">
+              {gameLogs.map((entry, idx) => (
+                <div key={idx} className="log-entry-item">
+                  <span className="log-bullet">•</span>
+                  <span className="log-text">{entry}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: END GAME ================= */}
+      {activeModal === 'endGame' && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>End Game Session?</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="modal-description">
+              Are you sure you want to exit the current Monopoly game session?
+            </p>
+            <div className="end-game-actions">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => setActiveModal(null)}
+              >
+                Keep Playing
+              </button>
+              <button
+                type="button"
+                className="btn-danger"
+                onClick={() => {
+                  if (onBackToHome) onBackToHome();
+                  else if (onRestartSetup) onRestartSetup();
+                }}
+              >
+                Exit to Home
+              </button>
+            </div>
           </div>
         </div>
       )}
