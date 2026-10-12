@@ -74,6 +74,18 @@ const PLAYER_THEMES = [
   },
 ];
 
+// Memory match cards icons for Lottery Type 2 (10 cards: 5 pairs)
+const MEMORY_ICONS = ['🎩', '🚗', '🐕', '🚢', '🚂', '🎩', '🚗', '🐕', '🚢', '🚂'];
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   // Ensure default 5 players if none passed, matching user screenshot
   const gamePlayers = (players && players.length > 0)
@@ -97,21 +109,41 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   const [loadingCards, setLoadingCards] = useState(true);
 
   // Ownership state: { [cardId]: { ownerId: playerId, erections: 0..5 } }
-  // Starts completely clean with zero placeholders!
   const [ownership, setOwnership] = useState({});
 
   // Loan state: { [playerId]: { hasActiveLoan: bool, principal: 500, interest: 25, totalDue: 525 } }
   const [loans, setLoans] = useState({});
 
-  // Active modal: 'switchPlayer' | 'totalDeck' | 'remainingDeck' | 'loans' | 'log' | 'endGame' | 'addCard' | 'tradeDesk'
+  // Active modal: 'switchPlayer' | 'totalDeck' | 'remainingDeck' | 'loans' | 'log' | 'endGame' | 'settlement' | 'podium' | 'pastGames' | 'addCard' | 'tradeDesk' | 'sellCard' | 'lottery'
   const [activeModal, setActiveModal] = useState(null);
+
+  // Selling modal state
+  const [sellingCardId, setSellingCardId] = useState(null);
 
   // Trade Desk State
   const [tradePlayer1Id, setTradePlayer1Id] = useState(null);
   const [tradePlayer2Id, setTradePlayer2Id] = useState(null);
-  const [tradeOfferedCards1, setTradeOfferedCards1] = useState([]); // Array of card IDs from Player 1
-  const [tradeOfferedCards2, setTradeOfferedCards2] = useState([]); // Array of card IDs from Player 2
+  const [tradeOfferedCards1, setTradeOfferedCards1] = useState([]);
+  const [tradeOfferedCards2, setTradeOfferedCards2] = useState([]);
   const [isTradeAnimating, setIsTradeAnimating] = useState(false);
+
+  // End Game Settlement State
+  const [settlementCash, setSettlementCash] = useState({}); // { [playerId]: number }
+  const [finalGameResults, setFinalGameResults] = useState(null);
+  const [dbPastGames, setDbPastGames] = useState([]);
+
+  // Lottery State
+  const [lotteryTab, setLotteryTab] = useState('type1'); // 'type1' (Banker Mystery Prize) | 'type2' (10-Card Memory Match)
+  // Type 1: Banker Mystery Scratch / Flip
+  const [type1PrizeInput, setType1PrizeInput] = useState('₹500 Cash Prize & 1 Free House');
+  const [type1ActivePrize, setType1ActivePrize] = useState('₹500 Cash Prize & 1 Free House');
+  const [type1IsFlipped, setType1IsFlipped] = useState(false);
+  // Type 2: 10-Card Memory Match Loop
+  const [type2PlayerIndex, setType2PlayerIndex] = useState(0); // Loops through players
+  const [type2Cards, setType2Cards] = useState([]);
+  const [type2FlippedIndices, setType2FlippedIndices] = useState([]);
+  const [type2MatchedPairs, setType2MatchedPairs] = useState([]);
+  const [type2WinnerAlert, setType2WinnerAlert] = useState(null);
 
   const [toastMessage, setToastMessage] = useState(null);
   const [gameLogs, setGameLogs] = useState([
@@ -119,9 +151,43 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     `Current turn: ${gamePlayers[0]?.name || 'Player 1'}.`,
   ]);
 
+  // Load persistent game session state from localStorage if available
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('monopoly_active_game_state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.ownership) setOwnership(parsed.ownership);
+        if (parsed.loans) setLoans(parsed.loans);
+        if (parsed.activePlayerIndex !== undefined) setActivePlayerIndex(parsed.activePlayerIndex);
+        if (parsed.gameLogs) setGameLogs(parsed.gameLogs);
+      }
+    } catch (e) {
+      console.error('Failed to load local game state:', e);
+    }
+  }, []);
+
+  // Save persistent state whenever ownership, loans, or turn changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        'monopoly_active_game_state',
+        JSON.stringify({
+          ownership,
+          loans,
+          activePlayerIndex,
+          gameLogs,
+        })
+      );
+    } catch (e) {
+      console.error('Failed to save local game state:', e);
+    }
+  }, [ownership, loans, activePlayerIndex, gameLogs]);
+
   // Fetch real properties directly from MongoDB Atlas via /api/properties
   useEffect(() => {
     fetchCardsFromDB();
+    initMemoryMatchDeck();
   }, []);
 
   const fetchCardsFromDB = async () => {
@@ -135,8 +201,6 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
           `Connected to MongoDB Atlas: Loaded ${data.data.length} official properties.`,
           ...prev,
         ]);
-      } else {
-        console.error('Failed to load properties:', data.error);
       }
     } catch (err) {
       console.error('Error fetching cards from database:', err);
@@ -145,11 +209,23 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     }
   };
 
+  const fetchPastGamesFromDB = async () => {
+    try {
+      const res = await fetch('/api/game-results');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setDbPastGames(data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching past games:', err);
+    }
+  };
+
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage((prev) => (prev === msg ? null : prev));
-    }, 2400);
+    }, 2500);
   };
 
   const handleSwitchPlayer = (index) => {
@@ -161,7 +237,8 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   };
 
   // ================= ASSET VALUE CALCULATION =================
-  // Formula specified by user: 0.9 * (land value + no of erections * erection cost)
+  // User correction: Asset value is the 100% ACTUAL total amount (NO 0.9x factor for portfolio value).
+  // 0.9x factor applies ONLY while selling assets to the bank!
   const calculatePlayerAssetValue = (playerId) => {
     let rawTotal = 0;
     allCards.forEach((card) => {
@@ -173,7 +250,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
         rawTotal += landValue + (erectionCount * erectionCost);
       }
     });
-    return Math.round(0.9 * rawTotal);
+    return rawTotal;
   };
 
   // Calculate rent for a card given its erection level from DB fields
@@ -208,7 +285,61 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     setActiveModal(null);
   };
 
-  // Take Back Card from Player to Bank
+  // ================= SELLING SYSTEM (0.9x FACTOR) =================
+  // Rule: Selling card, houses, or card with houses is paid at 0.9x actual gross value.
+  const handleSellPropertyToBank = (cardId) => {
+    const card = allCards.find((c) => c._id === cardId);
+    const own = ownership[cardId];
+    if (!card || !own) return;
+
+    const landValue = Number(card.buyingCost) || 0;
+    const erections = Number(own.erections) || 0;
+    const erectionCost = Number(card.buildingCost) || 0;
+    const grossTotal = landValue + (erections * erectionCost);
+    const payout = Math.round(0.9 * grossTotal);
+
+    const player = gamePlayers.find((p) => p.id === own.ownerId);
+
+    // Remove property from ownership back to Bank Vault
+    setOwnership((prev) => {
+      const next = { ...prev };
+      delete next[cardId];
+      return next;
+    });
+
+    setGameLogs((prev) => [
+      `💰 ${player?.name} liquidated ${card.name} (${erections} houses) to Bank for ₹${payout} (0.9x of ₹${grossTotal}).`,
+      ...prev,
+    ]);
+    showToast(`Sold ${card.name}! Bank pays ₹${payout} (0.9x value).`);
+    setActiveModal(null);
+    setSellingCardId(null);
+  };
+
+  const handleSellOneHouse = (cardId) => {
+    const card = allCards.find((c) => c._id === cardId);
+    const own = ownership[cardId];
+    if (!card || !own || (own.erections || 0) <= 0) return;
+
+    const erectionCost = Number(card.buildingCost) || 0;
+    const payout = Math.round(0.9 * erectionCost);
+    const player = gamePlayers.find((p) => p.id === own.ownerId);
+
+    setOwnership((prev) => ({
+      ...prev,
+      [cardId]: { ...prev[cardId], erections: prev[cardId].erections - 1 },
+    }));
+
+    setGameLogs((prev) => [
+      `🏠 ${player?.name} sold 1 house on ${card.name} to Bank for ₹${payout} (0.9x of ₹${erectionCost}).`,
+      ...prev,
+    ]);
+    showToast(`Demolished 1 house! Bank pays ₹${payout} (0.9x).`);
+    setActiveModal(null);
+    setSellingCardId(null);
+  };
+
+  // Take Back Card from Player to Bank (administrative)
   const handleTakeBackCard = (cardId) => {
     const card = allCards.find((c) => c._id === cardId);
     const currentOwner = gamePlayers.find((p) => p.id === ownership[cardId]?.ownerId);
@@ -217,7 +348,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
       delete next[cardId];
       return next;
     });
-    setGameLogs((prev) => [`Banker took back ${card?.name} from ${currentOwner?.name} to Bank Vault.`, ...prev]);
+    setGameLogs((prev) => [`Banker returned ${card?.name} from ${currentOwner?.name} to Bank Vault.`, ...prev]);
     showToast(`Returned ${card?.name} to Bank Vault`);
   };
 
@@ -234,11 +365,10 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   };
 
   // ================= LOAN SYSTEM LOGIC =================
-  // Rule: Max ₹500 loan. Once given, limit is OVER. Next loan only allowed after repaying with 5% interest (₹525 total).
   const handleGrantLoan = (playerId) => {
     const player = gamePlayers.find((p) => p.id === playerId);
     if (loans[playerId]?.hasActiveLoan) {
-      showToast(`Cannot issue loan: ${player?.name} already has an active loan limit!`);
+      showToast(`Cannot issue loan: ${player?.name} already reached their ₹500 loan limit!`);
       return;
     }
     setLoans((prev) => ({
@@ -246,15 +376,15 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
       [playerId]: {
         hasActiveLoan: true,
         principal: 500,
-        interest: 25, // 5% of 500
+        interest: 25, // 5%
         totalDue: 525,
       },
     }));
     setGameLogs((prev) => [
-      `🏦 Bank granted ₹500 loan to ${player?.name}. (Limit reached. Repayment due: ₹525 with 5% interest)`,
+      `🏦 Bank granted ₹500 loan to ${player?.name}. Limit reached. Repayment due: ₹525 with 5% interest.`,
       ...prev,
     ]);
-    showToast(`₹500 loan approved for ${player?.name}!`);
+    showToast(`₹500 loan granted to ${player?.name}!`);
   };
 
   const handleRepayLoan = (playerId) => {
@@ -280,21 +410,18 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   };
 
   // ================= TRADE DESK LOGIC =================
-  // Toggle card selection in Player 1's trade box
   const toggleTradeCard1 = (cardId) => {
     setTradeOfferedCards1((prev) =>
       prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId]
     );
   };
 
-  // Toggle card selection in Player 2's trade box
   const toggleTradeCard2 = (cardId) => {
     setTradeOfferedCards2((prev) =>
       prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId]
     );
   };
 
-  // Direct 1-tap trade from Player 1 to Player 2
   const handleQuickSendToPlayer2 = (cardId) => {
     if (!tradePlayer2Id) {
       showToast('Select Trader 2 first!');
@@ -314,7 +441,6 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     showToast(`Transferred ${card?.name} to ${p2?.name}!`);
   };
 
-  // Direct 1-tap trade from Player 2 to Player 1
   const handleQuickSendToPlayer1 = (cardId) => {
     if (!tradePlayer1Id) {
       showToast('Select Trader 1 first!');
@@ -334,7 +460,6 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     showToast(`Transferred ${card?.name} to ${p1?.name}!`);
   };
 
-  // Execute full bilateral or unilateral trade of all selected cards
   const handleExecuteTrade = () => {
     if (!tradePlayer1Id || !tradePlayer2Id) {
       showToast('Please select both traders to execute trade.');
@@ -357,11 +482,9 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     setTimeout(() => {
       setOwnership((prev) => {
         const next = { ...prev };
-        // Transfer all Player 1 selected cards to Player 2
         tradeOfferedCards1.forEach((cId) => {
           if (next[cId]) next[cId] = { ...next[cId], ownerId: tradePlayer2Id };
         });
-        // Transfer all Player 2 selected cards to Player 1
         tradeOfferedCards2.forEach((cId) => {
           if (next[cId]) next[cId] = { ...next[cId], ownerId: tradePlayer1Id };
         });
@@ -378,7 +501,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
         .join(', ');
 
       setGameLogs((prev) => [
-        `🤝 Multi-Trade Completed between ${p1?.name} & ${p2?.name}: [${cards1Names || 'None'}] ⇄ [${cards2Names || 'None'}].`,
+        `🤝 Trade Executed: ${p1?.name} gave [${cards1Names || 'None'}] ⇄ ${p2?.name} gave [${cards2Names || 'None'}].`,
         ...prev,
       ]);
 
@@ -389,11 +512,129 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     }, 600);
   };
 
+  // ================= END GAME & WINNER DECISION LOGIC =================
+  const handleProceedToSettlement = () => {
+    // Initialize default settlement cash inputs
+    const initialCash = {};
+    gamePlayers.forEach((p) => {
+      initialCash[p.id] = settlementCash[p.id] ?? 1500;
+    });
+    setSettlementCash(initialCash);
+    setActiveModal('settlement');
+  };
+
+  const handleFinalizeWinnerAndSaveDB = async () => {
+    // Formula: Total Score = Actual Asset Value + Remaining Cash
+    const calculatedPlayers = gamePlayers.map((p) => {
+      const assetVal = calculatePlayerAssetValue(p.id);
+      const cash = Number(settlementCash[p.id]) || 0;
+      const totalScore = assetVal + cash;
+      const owned = allCards.filter((c) => ownership[c._id]?.ownerId === p.id);
+      return {
+        id: p.id,
+        name: p.name,
+        token: p.token?.icon || '👤',
+        assetValue: assetVal,
+        cashRemaining: cash,
+        totalScore,
+        deedsCount: owned.length,
+        deeds: owned.map((c) => c.name),
+        isWinner: false,
+      };
+    });
+
+    // Sort descending to find winner
+    calculatedPlayers.sort((a, b) => b.totalScore - a.totalScore);
+    if (calculatedPlayers[0]) {
+      calculatedPlayers[0].isWinner = true;
+    }
+
+    const winner = calculatedPlayers[0];
+    const matchRecord = {
+      winnerName: winner.name,
+      winnerTotal: winner.totalScore,
+      players: calculatedPlayers,
+    };
+
+    setFinalGameResults(matchRecord);
+
+    // Save game results to MongoDB Atlas!
+    try {
+      await fetch('/api/game-results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(matchRecord),
+      });
+      showToast('Match Results saved securely to MongoDB Atlas!');
+    } catch (err) {
+      console.error('Failed to save match to DB:', err);
+    }
+
+    // Clear active session from localStorage since match concluded!
+    try {
+      localStorage.removeItem('monopoly_active_game_state');
+      localStorage.removeItem('monopoly_active_game_session');
+    } catch (e) {}
+
+    setActiveModal('podium');
+  };
+
+  // ================= LOTTERY SYSTEMS =================
+  // Lottery Type 2: 10-Card Memory Match Deck Init
+  const initMemoryMatchDeck = () => {
+    const shuffled = shuffleArray(MEMORY_ICONS).map((icon, idx) => ({
+      id: idx,
+      icon,
+    }));
+    setType2Cards(shuffled);
+    setType2FlippedIndices([]);
+    setType2MatchedPairs([]);
+    setType2WinnerAlert(null);
+  };
+
+  const handleMemoryCardClick = (index) => {
+    if (type2FlippedIndices.length >= 2) return;
+    if (type2FlippedIndices.includes(index) || type2MatchedPairs.includes(index)) return;
+
+    const newFlipped = [...type2FlippedIndices, index];
+    setType2FlippedIndices(newFlipped);
+
+    if (newFlipped.length === 2) {
+      const [firstIdx, secondIdx] = newFlipped;
+      const firstCard = type2Cards[firstIdx];
+      const secondCard = type2Cards[secondIdx];
+
+      if (firstCard.icon === secondCard.icon) {
+        // MATCH!
+        const curPlayer = gamePlayers[type2PlayerIndex];
+        setType2MatchedPairs((prev) => [...prev, firstIdx, secondIdx]);
+        setType2WinnerAlert(`🎉 MATCH FOUND! ${curPlayer.name} wins ₹500 Prize!`);
+        setGameLogs((prev) => [
+          `🎰 LOTTERY WINNER: ${curPlayer.name} matched pair (${firstCard.icon}) and won ₹500 cash prize!`,
+          ...prev,
+        ]);
+        showToast(`${curPlayer.name} won ₹500 in the Lottery!`);
+        setTimeout(() => setType2FlippedIndices([]), 800);
+      } else {
+        // Not a match, flip back
+        setTimeout(() => setType2FlippedIndices([]), 1000);
+      }
+    }
+  };
+
+  const handleNextPlayerLotteryChance = () => {
+    const nextIdx = (type2PlayerIndex + 1) % gamePlayers.length;
+    setType2PlayerIndex(nextIdx);
+    initMemoryMatchDeck();
+    showToast(`Fresh 10-card deck ready for ${gamePlayers[nextIdx].name}!`);
+  };
+
   // Helper arrays
   const remainingCards = allCards.filter((card) => !ownership[card._id]);
-  const activePlayer = gamePlayers[activePlayerIndex] || gamePlayers[0];
   const portfolioPlayer = gamePlayers.find((p) => p.id === viewingPortfolioPlayerId);
   const portfolioCards = allCards.filter((card) => ownership[card._id]?.ownerId === viewingPortfolioPlayerId);
+  const sellingCard = allCards.find((c) => c._id === sellingCardId);
+  const sellingCardOwn = ownership[sellingCardId] || { erections: 0 };
 
   // Trade Desk Party Cards
   const trader1 = gamePlayers.find((p) => p.id === tradePlayer1Id);
@@ -467,6 +708,31 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                 <span>Loans</span>
               </button>
 
+              {/* Lottery Button */}
+              <button
+                type="button"
+                className="nav-item-btn nav-btn-lottery"
+                onClick={() => setActiveModal('lottery')}
+                title="Open Lottery Game"
+              >
+                <span className="nav-icon">🎰</span>
+                <span>Lottery</span>
+              </button>
+
+              {/* Match Results from DB */}
+              <button
+                type="button"
+                className="nav-item-btn"
+                onClick={() => {
+                  fetchPastGamesFromDB();
+                  setActiveModal('pastGames');
+                }}
+                title="View Match Results Saved in DB"
+              >
+                <span className="nav-icon">🏆</span>
+                <span>Match History</span>
+              </button>
+
               <button
                 type="button"
                 className="nav-item-btn"
@@ -508,7 +774,6 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                       '--card-glow': theme.glow,
                     }}
                     onClick={() => {
-                      // Tap box to open this player's portfolio page!
                       setViewingPortfolioPlayerId(player.id);
                     }}
                     title={`Tap to view ${player.name}'s Portfolio`}
@@ -537,7 +802,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                     <div className="card-name-wrapper">
                       <h2 className="player-box-name">{player.name}</h2>
                       <span className="card-preview-subtitle">
-                        {cardCount} Deeds • ₹{assetVal} Asset
+                        {cardCount} Deeds • ₹{assetVal} Actual Asset
                       </span>
                     </div>
 
@@ -554,7 +819,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
       )}
 
       {/* =========================================================================
-          VIEW B: DEDICATED PLAYER PORTFOLIO SCREEN (When viewingPortfolioPlayerId is set)
+          VIEW B: DEDICATED PLAYER PORTFOLIO SCREEN (With Correct Asset Value & Sell)
           ========================================================================= */}
       {viewingPortfolioPlayerId !== null && portfolioPlayer && (
         <div className="portfolio-screen-view">
@@ -577,9 +842,9 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
               <span className="player-pill-name">{portfolioPlayer.name}</span>
             </div>
 
-            {/* Asset Value Tag: 0.9 * (land + erections * buildingCost) */}
+            {/* Asset Value Tag: 100% Actual Total Asset Value without multiplying factor */}
             <div className="portfolio-asset-tag">
-              <span className="asset-tag-label">0.9x Asset Value</span>
+              <span className="asset-tag-label">Actual Total Asset</span>
               <span className="asset-tag-value">
                 ₹{calculatePlayerAssetValue(portfolioPlayer.id)}
               </span>
@@ -639,7 +904,8 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                   const currentRent = getCardCurrentRent(card, erections);
                   const canErect = card.type === 'property' && (Number(card.buildingCost) || 0) > 0;
                   const erectionCost = Number(card.buildingCost) || 0;
-                  const singleCardAssetVal = Math.round(0.9 * ((Number(card.buyingCost) || 0) + (erections * erectionCost)));
+                  const grossVal = (Number(card.buyingCost) || 0) + (erections * erectionCost);
+                  const liquidationPayout = Math.round(0.9 * grossVal);
                   const bannerColor = normalizeCardColor(card.color, card.type);
 
                   return (
@@ -705,14 +971,31 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                           </div>
                         )}
 
-                        {/* Single Card 0.9x Asset Breakdown */}
+                        {/* 100% Actual Asset Breakdown + 0.9x Sell Value Indicator */}
                         <div className="deed-asset-breakdown">
-                          <span>Deed Asset: <strong>₹{singleCardAssetVal}</strong></span>
-                          <span className="formula-hint">0.9×(₹{card.buyingCost} + {erections}×₹{erectionCost})</span>
+                          <span className="actual-val-line">
+                            Actual Asset: <strong>₹{grossVal}</strong>
+                          </span>
+                          <span className="liquidation-val-line">
+                            Liquidation Payout (0.9x): <strong>₹{liquidationPayout}</strong>
+                          </span>
                         </div>
 
-                        {/* Action Buttons: Trade & Return to Bank */}
+                        {/* Action Buttons: SELL (0.9x) | Trade | Return to Bank */}
                         <div className="deed-card-actions">
+                          {/* Sell Option with 0.9x Calculation */}
+                          <button
+                            type="button"
+                            className="deed-action-btn btn-sell-action"
+                            onClick={() => {
+                              setSellingCardId(card._id);
+                              setActiveModal('sellCard');
+                            }}
+                            title="Liquidate card and houses to Bank at 0.9x value"
+                          >
+                            💰 Sell (0.9x)
+                          </button>
+
                           <button
                             type="button"
                             className="deed-action-btn btn-trade"
@@ -722,7 +1005,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                               setActiveModal('tradeDesk');
                             }}
                           >
-                            🤝 Trade Card
+                            🤝 Trade
                           </button>
 
                           <button
@@ -731,7 +1014,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                             onClick={() => handleTakeBackCard(card._id)}
                             title="Banker takes card back to Bank Vault"
                           >
-                            🏦 Return to Bank
+                            🏦 Take Back
                           </button>
                         </div>
                       </div>
@@ -748,6 +1031,92 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
       {toastMessage && (
         <div className="floating-toast">
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: SELL / LIQUIDATION SYSTEM (0.9x FACTOR)
+          ========================================================================= */}
+      {activeModal === 'sellCard' && sellingCard && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>💰 Liquidate Property to Bank (0.9x Value)</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="modal-description">
+              Properties and erections sold back to the Bank are redeemed at <strong>90% (0.9x)</strong> of their actual value:
+            </p>
+
+            {(() => {
+              const landVal = Number(sellingCard.buyingCost) || 0;
+              const erectionCount = Number(sellingCardOwn.erections) || 0;
+              const erectionCost = Number(sellingCard.buildingCost) || 0;
+              const erectionsTotalVal = erectionCount * erectionCost;
+              const totalGross = landVal + erectionsTotalVal;
+              const fullPayout = Math.round(0.9 * totalGross);
+              const oneHousePayout = Math.round(0.9 * erectionCost);
+
+              return (
+                <div className="liquidation-calculator-panel">
+                  <div className="liquidation-item-header">
+                    <h4>{sellingCard.name}</h4>
+                    <span className="liquidation-owner">Owner: {portfolioPlayer?.name}</span>
+                  </div>
+
+                  <div className="liquidation-receipt-box">
+                    <div className="receipt-line">
+                      <span>Land Purchase Cost:</span>
+                      <strong>₹{landVal}</strong>
+                    </div>
+                    {erectionCount > 0 && (
+                      <div className="receipt-line">
+                        <span>Erections ({erectionCount}x ₹{erectionCost}):</span>
+                        <strong>₹{erectionsTotalVal}</strong>
+                      </div>
+                    )}
+                    <div className="receipt-line gross-line">
+                      <span>Total Actual Value:</span>
+                      <strong>₹{totalGross}</strong>
+                    </div>
+                    <div className="receipt-line rate-line">
+                      <span>Liquidation Multiplier:</span>
+                      <strong>0.9x</strong>
+                    </div>
+                    <div className="receipt-line payout-line">
+                      <span>Bank Payout to Player:</span>
+                      <strong className="payout-amount">₹{fullPayout}</strong>
+                    </div>
+                  </div>
+
+                  <div className="liquidation-action-buttons">
+                    {erectionCount > 0 && (
+                      <button
+                        type="button"
+                        className="btn-sell-house-only"
+                        onClick={() => handleSellOneHouse(sellingCard._id)}
+                      >
+                        Sell 1 House Only (Receive ₹{oneHousePayout})
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn-sell-entire"
+                      onClick={() => handleSellPropertyToBank(sellingCard._id)}
+                    >
+                      Sell Entire Property + Erections (Receive ₹{fullPayout})
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         </div>
       )}
 
@@ -823,9 +1192,8 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
 
             {/* TWO TRADING BOXES CONTAINER */}
             <div className={`trade-pods-grid ${isTradeAnimating ? 'trade-swapping-glow' : ''}`}>
-              {/* ================= TRADER 1 BOX ================= */}
+              {/* TRADER 1 BOX */}
               <div className="trade-party-pod pod-left">
-                {/* Header or Placeholder */}
                 {trader1 ? (
                   <div className="trade-pod-header">
                     <div className="pod-header-user">
@@ -875,7 +1243,6 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                   </div>
                 )}
 
-                {/* Vertical Carousel of Trader 1's Cards */}
                 {trader1 && (
                   <div className="trade-vertical-carousel">
                     {trader1Cards.length === 0 ? (
@@ -933,7 +1300,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                 )}
               </div>
 
-              {/* ================= CENTRAL EXCHANGE HUB ================= */}
+              {/* CENTRAL EXCHANGE HUB */}
               <div className="trade-center-bridge">
                 <div className="trade-direction-indicator">
                   {tradeOfferedCards1.length > 0 && tradeOfferedCards2.length > 0 ? (
@@ -975,9 +1342,8 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                 </button>
               </div>
 
-              {/* ================= TRADER 2 BOX ================= */}
+              {/* TRADER 2 BOX */}
               <div className="trade-party-pod pod-right">
-                {/* Header or Placeholder */}
                 {trader2 ? (
                   <div className="trade-pod-header">
                     <div className="pod-header-user">
@@ -1027,7 +1393,6 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                   </div>
                 )}
 
-                {/* Vertical Carousel of Trader 2's Cards */}
                 {trader2 && (
                   <div className="trade-vertical-carousel">
                     {trader2Cards.length === 0 ? (
@@ -1084,6 +1449,416 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: LOTTERY SYSTEM (TYPE 1: MYSTERY SCRATCH/FLIP & TYPE 2: 10-CARD MEMORY MATCH)
+          ========================================================================= */}
+      {activeModal === 'lottery' && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content modal-large lottery-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="lottery-modal-titles">
+                <h3>🎰 Monopoly Digital Lottery</h3>
+                <div className="lottery-tab-switch">
+                  <button
+                    type="button"
+                    className={`lottery-tab-btn ${lotteryTab === 'type1' ? 'active' : ''}`}
+                    onClick={() => setLotteryTab('type1')}
+                  >
+                    🎁 Type 1: Mystery Prize Card
+                  </button>
+                  <button
+                    type="button"
+                    className={`lottery-tab-btn ${lotteryTab === 'type2' ? 'active' : ''}`}
+                    onClick={() => setLotteryTab('type2')}
+                  >
+                    🃏 Type 2: 10-Card Memory Match (₹500 Prize)
+                  </button>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* LOTTERY TYPE 1: BANKER MYSTERY PRIZE CARD */}
+            {lotteryTab === 'type1' && (
+              <div className="lottery-type1-container">
+                <div className="type1-banker-controls">
+                  <label>Banker Custom Prize Specification:</label>
+                  <div className="type1-input-row">
+                    <input
+                      type="text"
+                      className="type1-prize-input"
+                      value={type1PrizeInput}
+                      onChange={(e) => setType1PrizeInput(e.target.value)}
+                      placeholder="e.g. ₹500 Cash, Free House, Electric Company..."
+                    />
+                    <button
+                      type="button"
+                      className="type1-set-btn"
+                      onClick={() => {
+                        setType1ActivePrize(type1PrizeInput || 'Surprise Prize!');
+                        setType1IsFlipped(false);
+                        showToast('Mystery Prize Sealed inside Card!');
+                      }}
+                    >
+                      Seal in Card 🔒
+                    </button>
+                  </div>
+                </div>
+
+                {/* The Big 3D Mystery Card */}
+                <div className="type1-card-stage">
+                  <div
+                    className={`lottery-flip-card ${type1IsFlipped ? 'is-flipped' : ''}`}
+                    onClick={() => {
+                      if (!type1IsFlipped) {
+                        setType1IsFlipped(true);
+                        showToast(`Prize Revealed: ${type1ActivePrize}`);
+                      }
+                    }}
+                  >
+                    {/* Front Face: Mystery Closed */}
+                    <div className="flip-face flip-front">
+                      <div className="mystery-pattern">🎲</div>
+                      <span className="mystery-title">OFFICIAL MONOPOLY LOTTERY</span>
+                      <div className="mystery-badge">TAP TO REVEAL PRIZE</div>
+                      <p className="mystery-hint">Physical draw winner taps here to unlock!</p>
+                    </div>
+
+                    {/* Back Face: Revealed Prize */}
+                    <div className="flip-face flip-back">
+                      <span className="prize-trophy">🏆</span>
+                      <span className="prize-congrats">CONGRATULATIONS!</span>
+                      <h2 className="prize-text">{type1ActivePrize}</h2>
+                      <button
+                        type="button"
+                        className="prize-reset-chip"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setType1IsFlipped(false);
+                        }}
+                      >
+                        🔄 Seal Again for Next Winner
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* LOTTERY TYPE 2: 10-CARD MEMORY MATCH (₹500 PRIZE LOOP FOR EACH PLAYER) */}
+            {lotteryTab === 'type2' && (
+              <div className="lottery-type2-container">
+                <div className="type2-player-turn-banner">
+                  <div className="type2-player-info">
+                    <span className="type2-player-token">
+                      {gamePlayers[type2PlayerIndex]?.token?.icon || '👤'}
+                    </span>
+                    <div>
+                      <h4 className="type2-player-heading">
+                        {gamePlayers[type2PlayerIndex]?.name}&rsquo;s Chance ({type2PlayerIndex + 1}/{gamePlayers.length})
+                      </h4>
+                      <p className="type2-player-sub">
+                        Flip 2 cards. If both match, win <strong>₹500 Prize</strong>!
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="type2-next-player-btn"
+                    onClick={handleNextPlayerLotteryChance}
+                  >
+                    Next Player Chance ➔
+                  </button>
+                </div>
+
+                {type2WinnerAlert && (
+                  <div className="type2-winner-alert-box">
+                    <span>{type2WinnerAlert}</span>
+                  </div>
+                )}
+
+                {/* 10-Card Memory Grid (5x2) */}
+                <div className="memory-cards-grid">
+                  {type2Cards.map((card, idx) => {
+                    const isFlipped = type2FlippedIndices.includes(idx) || type2MatchedPairs.includes(idx);
+                    const isMatched = type2MatchedPairs.includes(idx);
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`memory-card-box ${isFlipped ? 'card-face-up' : 'card-face-down'} ${isMatched ? 'card-matched-glow' : ''}`}
+                        onClick={() => handleMemoryCardClick(idx)}
+                      >
+                        <div className="memory-card-inner">
+                          {/* Face Down */}
+                          <div className="mem-face mem-back">
+                            <span className="mem-back-icon">🎲</span>
+                            <span className="mem-back-num">#{idx + 1}</span>
+                          </div>
+                          {/* Face Up */}
+                          <div className="mem-face mem-front">
+                            <span className="mem-icon">{card.icon}</span>
+                            {isMatched && <span className="mem-match-star">⭐</span>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: END GAME STEP 1 (CROSS-VERIFICATION POPUP)
+          ========================================================================= */}
+      {activeModal === 'endGame' && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>End Game Session?</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="modal-description">
+              Are you sure you want to conclude this Monopoly match? You will enter the remaining cash of each player to calculate the champion!
+            </p>
+            <div className="end-game-actions">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => setActiveModal(null)}
+              >
+                Keep Playing
+              </button>
+              <button
+                type="button"
+                className="btn-primary-settle"
+                onClick={handleProceedToSettlement}
+              >
+                Yes, Enter Final Amounts ➔
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: END GAME STEP 2 (ENTER REMAINING AMOUNT OF EACH PLAYER)
+          ========================================================================= */}
+      {activeModal === 'settlement' && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>🏆 Final Settlement & Winner Decision</h3>
+                <p className="modal-subtitle-note">
+                  Enter remaining cash in hand for each player. Total = Actual Asset Value + Remaining Cash!
+                </p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="settlement-players-list">
+              {gamePlayers.map((p) => {
+                const assetVal = calculatePlayerAssetValue(p.id);
+                const cash = Number(settlementCash[p.id]) || 0;
+                const total = assetVal + cash;
+
+                return (
+                  <div key={p.id} className="settlement-player-row">
+                    <div className="settle-identity">
+                      <span className="settle-token">{p.token?.icon || '👤'}</span>
+                      <div>
+                        <h4 className="settle-name">{p.name}</h4>
+                        <span className="settle-asset-hint">Asset Value: ₹{assetVal}</span>
+                      </div>
+                    </div>
+
+                    <div className="settle-input-group">
+                      <label>Remaining Cash (₹):</label>
+                      <input
+                        type="number"
+                        className="settle-cash-input"
+                        value={settlementCash[p.id] ?? ''}
+                        onChange={(e) =>
+                          setSettlementCash((prev) => ({
+                            ...prev,
+                            [p.id]: Number(e.target.value),
+                          }))
+                        }
+                        placeholder="e.g. 1500"
+                      />
+                    </div>
+
+                    <div className="settle-total-preview">
+                      <span className="total-label">Total Score</span>
+                      <strong className="total-val">₹{total}</strong>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="settlement-submit-row">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => setActiveModal('endGame')}
+              >
+                ← Back
+              </button>
+              <button
+                type="button"
+                className="btn-decide-winner"
+                onClick={handleFinalizeWinnerAndSaveDB}
+              >
+                Decide Winner & Save to Database 👑
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: WINNER PODIUM & SAVED TO DATABASE ANNOUNCEMENT
+          ========================================================================= */}
+      {activeModal === 'podium' && finalGameResults && (
+        <div className="game-modal-overlay">
+          <div className="game-modal-content modal-large podium-modal-content">
+            <div className="podium-celebration-header">
+              <span className="podium-trophy-icon">🏆</span>
+              <h2 className="podium-winner-title">
+                {finalGameResults.winnerName} WINS THE GAME!
+              </h2>
+              <span className="podium-winning-score">
+                Total Net Worth: ₹{finalGameResults.winnerTotal}
+              </span>
+              <span className="db-saved-badge">✓ Match Results Saved to MongoDB Atlas</span>
+            </div>
+
+            {/* Ranked Player Standings */}
+            <div className="podium-standings-list">
+              {finalGameResults.players.map((item, rank) => (
+                <div
+                  key={item.id}
+                  className={`podium-rank-row ${item.isWinner ? 'rank-row-winner' : ''}`}
+                >
+                  <span className="podium-rank-num">
+                    {rank === 0 ? '👑 #1' : `#${rank + 1}`}
+                  </span>
+                  <span className="podium-player-name">
+                    {item.token} {item.name}
+                  </span>
+                  <div className="podium-score-breakdown">
+                    <span>Assets: ₹{item.assetValue}</span>
+                    <span>+ Cash: ₹{item.cashRemaining}</span>
+                  </div>
+                  <strong className="podium-final-score">₹{item.totalScore}</strong>
+                </div>
+              ))}
+            </div>
+
+            <div className="podium-footer-actions">
+              <button
+                type="button"
+                className="btn-view-db-games"
+                onClick={() => {
+                  fetchPastGamesFromDB();
+                  setActiveModal('pastGames');
+                }}
+              >
+                📜 View Past Match Records
+              </button>
+              <button
+                type="button"
+                className="btn-finish-home"
+                onClick={() => {
+                  if (onBackToHome) onBackToHome();
+                  else if (onRestartSetup) onRestartSetup();
+                }}
+              >
+                Finish & Exit to Home 🏠
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: PAST MATCH RECORDS SAVED IN MONGODB ATLAS
+          ========================================================================= */}
+      {activeModal === 'pastGames' && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="game-modal-content modal-large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>📜 MongoDB Match Records</h3>
+                <p className="modal-subtitle-note">
+                  All past matches, player portfolios, remaining cash, and winners stored in Atlas:
+                </p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="db-games-list">
+              {dbPastGames.length === 0 ? (
+                <div className="modal-empty-state">
+                  No completed match records found in database yet. Finish a match to save!
+                </div>
+              ) : (
+                dbPastGames.map((game, gIdx) => (
+                  <div key={game._id || gIdx} className="db-game-card">
+                    <div className="db-game-header">
+                      <div>
+                        <span className="db-game-winner">👑 Winner: {game.winnerName} (₹{game.winnerTotal})</span>
+                        <span className="db-game-date">
+                          {game.playedAt ? new Date(game.playedAt).toLocaleString() : 'Recent'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="db-game-players-preview">
+                      {game.players?.map((p, pIdx) => (
+                        <div key={pIdx} className="db-player-pill">
+                          <span>{p.token} {p.name}: ₹{p.totalScore}</span>
+                          <span className="db-sub-pill">({p.deedsCount || 0} deeds, ₹{p.cashRemaining || 0} cash)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -1203,9 +1978,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
         </div>
       )}
 
-      {/* =========================================================================
-          MODAL: LOAN SYSTEM (₹500 LIMIT + 5% INTEREST REPAYMENT REQUIREMENT)
-          ========================================================================= */}
+      {/* ================= MODAL: LOANS ================= */}
       {activeModal === 'loans' && (
         <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
           <div className="game-modal-content modal-large" onClick={(e) => e.stopPropagation()}>
@@ -1225,7 +1998,6 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
               </button>
             </div>
 
-            {/* Loans Table for all players */}
             <div className="loans-manager-list">
               {gamePlayers.map((player) => {
                 const pLoan = loans[player.id];
@@ -1244,7 +2016,6 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                         </div>
                       </div>
 
-                      {/* Repayment or Loan Amount Info */}
                       <div className="loan-financial-summary">
                         {hasLoan ? (
                           <div className="loan-due-breakdown">
@@ -1259,7 +2030,6 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                       </div>
                     </div>
 
-                    {/* Loan Action Buttons */}
                     <div className="loan-card-actions">
                       {!hasLoan ? (
                         <button
@@ -1308,46 +2078,6 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                   <span className="log-text">{entry}</span>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================= MODAL: END GAME ================= */}
-      {activeModal === 'endGame' && (
-        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
-          <div className="game-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>End Game Session?</h3>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setActiveModal(null)}
-              >
-                ✕
-              </button>
-            </div>
-            <p className="modal-description">
-              Are you sure you want to exit the current Monopoly game session?
-            </p>
-            <div className="end-game-actions">
-              <button
-                type="button"
-                className="btn-cancel"
-                onClick={() => setActiveModal(null)}
-              >
-                Keep Playing
-              </button>
-              <button
-                type="button"
-                className="btn-danger"
-                onClick={() => {
-                  if (onBackToHome) onBackToHome();
-                  else if (onRestartSetup) onRestartSetup();
-                }}
-              >
-                Exit to Home
-              </button>
             </div>
           </div>
         </div>
