@@ -111,8 +111,9 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   // Ownership state: { [cardId]: { ownerId: playerId, erections: 0..5 } }
   const [ownership, setOwnership] = useState({});
 
-  // Loan state: { [playerId]: { hasActiveLoan: bool, principal: 500, interest: 25, totalDue: 525 } }
+  // Loan state: { [playerId]: { hasActiveLoan: bool, principal: 500, interest: 25, totalDue: 525, whereTaken: string } }
   const [loans, setLoans] = useState({});
+  const [loanReasons, setLoanReasons] = useState({}); // { [playerId]: string } (Where loan was taken)
 
   // Active modal: 'switchPlayer' | 'totalDeck' | 'remainingDeck' | 'loans' | 'log' | 'endGame' | 'settlement' | 'podium' | 'pastGames' | 'addCard' | 'tradeDesk' | 'sellCard' | 'lottery'
   const [activeModal, setActiveModal] = useState(null);
@@ -371,6 +372,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
       showToast(`Cannot issue loan: ${player?.name} already reached their ₹500 loan limit!`);
       return;
     }
+    const whereTaken = (loanReasons[playerId] || '').trim() || 'General Use / Emergency';
     setLoans((prev) => ({
       ...prev,
       [playerId]: {
@@ -378,21 +380,25 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
         principal: 500,
         interest: 25, // 5%
         totalDue: 525,
+        whereTaken,
+        grantedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     }));
     setGameLogs((prev) => [
-      `🏦 Bank granted ₹500 loan to ${player?.name}. Limit reached. Repayment due: ₹525 with 5% interest.`,
+      `🏦 Bank granted ₹500 loan to ${player?.name} for [${whereTaken}]. Limit reached. Repayment due: ₹525 with 5% interest.`,
       ...prev,
     ]);
-    showToast(`₹500 loan granted to ${player?.name}!`);
+    showToast(`₹500 loan granted to ${player?.name} for "${whereTaken}"!`);
   };
 
   const handleRepayLoan = (playerId) => {
     const player = gamePlayers.find((p) => p.id === playerId);
-    if (!loans[playerId]?.hasActiveLoan) {
+    const existingLoan = loans[playerId];
+    if (!existingLoan?.hasActiveLoan) {
       showToast(`${player?.name} has no outstanding loans.`);
       return;
     }
+    const where = existingLoan.whereTaken || 'Loan';
     setLoans((prev) => ({
       ...prev,
       [playerId]: {
@@ -400,10 +406,12 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
         principal: 0,
         interest: 0,
         totalDue: 0,
+        whereTaken: null,
       },
     }));
+    setLoanReasons((prev) => ({ ...prev, [playerId]: '' }));
     setGameLogs((prev) => [
-      `💳 ${player?.name} repaid full loan of ₹525 (₹500 principal + ₹25 5% interest). Loan limit restored!`,
+      `💳 ${player?.name} repaid full loan of ₹525 (was taken for "${where}"). ₹500 limit restored!`,
       ...prev,
     ]);
     showToast(`Loan repaid! ₹500 limit restored for ${player?.name}.`);
@@ -2032,21 +2040,45 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
 
                     <div className="loan-card-actions">
                       {!hasLoan ? (
-                        <button
-                          type="button"
-                          className="loan-btn btn-grant-loan"
-                          onClick={() => handleGrantLoan(player.id)}
-                        >
-                          Grant ₹500 Loan 💰
-                        </button>
+                        <div className="loan-grant-flow">
+                          <div className="loan-reason-input-group">
+                            <label className="loan-input-label">Where / Reason for Loan:</label>
+                            <input
+                              type="text"
+                              className="loan-reason-input"
+                              placeholder="e.g. Buying Plot, Paying Rent, Bail..."
+                              value={loanReasons[player.id] || ''}
+                              onChange={(e) =>
+                                setLoanReasons((prev) => ({
+                                  ...prev,
+                                  [player.id]: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="loan-btn btn-grant-loan"
+                            onClick={() => handleGrantLoan(player.id)}
+                          >
+                            Grant ₹500 Loan 💰
+                          </button>
+                        </div>
                       ) : (
-                        <button
-                          type="button"
-                          className="loan-btn btn-repay-loan"
-                          onClick={() => handleRepayLoan(player.id)}
-                        >
-                          Repay Loan (₹525) 💳
-                        </button>
+                        <div className="loan-repay-flow">
+                          <div className="loan-where-badge">
+                            <span className="where-tag-label">📍 Taken For:</span>
+                            <strong className="where-tag-value">&ldquo;{pLoan.whereTaken || 'General Loan'}&rdquo;</strong>
+                            {pLoan.grantedAt && <span className="where-tag-time">at {pLoan.grantedAt}</span>}
+                          </div>
+                          <button
+                            type="button"
+                            className="loan-btn btn-repay-loan"
+                            onClick={() => handleRepayLoan(player.id)}
+                          >
+                            Repay Loan (₹525) 💳
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>

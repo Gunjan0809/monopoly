@@ -2430,3 +2430,630 @@ html, body {
   right: 4px;
   font-size: 0.7rem;
 }
+
+/* ==========================================================
+   BANK LOANS MANAGER COMPONENT STYLES
+   ========================================================== */
+.loans-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin: 0.8rem 0;
+}
+
+.loan-player-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 0.75rem 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.loan-player-card.loan-available {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.loan-player-card.loan-locked {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.loan-player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.loan-player-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.loan-token {
+  font-size: 1.4rem;
+}
+
+.loan-name {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #ffffff;
+}
+
+.loan-limit-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+  display: inline-block;
+  margin-top: 0.2rem;
+}
+
+.tag-available {
+  background: rgba(16, 185, 129, 0.18);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.tag-limit-over {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.loan-financial-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.due-total {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #f87171;
+}
+
+.due-formula {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.avail-amount {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #4ade80;
+}
+
+.loan-card-actions {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.loan-grant-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.loan-reason-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.loan-input-label {
+  font-size: 0.7rem;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.loan-reason-input {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.65rem;
+  width: 100%;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.loan-reason-input:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+.loan-btn {
+  padding: 0.6rem;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.btn-grant-loan {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #000000;
+}
+
+.btn-grant-loan:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  transform: translateY(-1px);
+}
+
+.loan-repay-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.loan-where-badge {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+}
+
+.where-tag-label {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.where-tag-value {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.where-tag-time {
+  color: #94a3b8;
+  font-size: 0.68rem;
+}
+
+.btn-repay-loan {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+}
+
+.btn-repay-loan:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+/* ==========================================================
+   HORIZONTAL MOBILE (LANDSCAPE) & SHORT VIEWPORT OPTIMIZATIONS
+   Ensures complete edge-to-edge full-screen fit with zero scrolling
+   ========================================================== */
+@media screen and (orientation: landscape), screen and (max-height: 520px) {
+  /* Edge-to-edge viewport container with safe-area support */
+  html, body {
+    width: 100vw !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .mobile-game-wrapper {
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    overflow: hidden !important;
+  }
+
+  /* Compact Horizontal Navbar */
+  .game-navbar-wrapper {
+    padding: 3px 8px 0 !important;
+  }
+
+  .game-navbar {
+    height: 35px !important;
+    padding: 0 0.35rem !important;
+    gap: 0.25rem !important;
+  }
+
+  .nav-item-btn {
+    font-size: 0.72rem !important;
+    padding: 0.25rem 0.5rem !important;
+    gap: 0.25rem !important;
+  }
+
+  .nav-icon {
+    font-size: 0.82rem !important;
+  }
+
+  /* Main Player Boxes Arena in Landscape */
+  .player-boxes-stage {
+    padding: 4px 10px !important;
+    height: calc(100dvh - 38px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .cards-deck-container {
+    gap: clamp(6px, 1.2vw, 12px) !important;
+    height: 100% !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  .player-box-card {
+    height: min(88%, 280px) !important;
+    padding: 0.55rem 0.5rem !important;
+    border-radius: 14px !important;
+    max-width: none !important;
+    flex: 1 1 0 !important;
+  }
+
+  .card-header-accent {
+    min-height: 20px !important;
+  }
+
+  .card-token-icon {
+    font-size: 1.2rem !important;
+  }
+
+  .card-active-pill {
+    font-size: 0.55rem !important;
+    padding: 0.12rem 0.4rem !important;
+  }
+
+  .card-name-wrapper {
+    padding: 0.15rem 0 !important;
+    gap: 0.1rem !important;
+  }
+
+  .player-box-name {
+    font-size: clamp(0.92rem, calc(85vw / var(--player-count, 5) / 2.7), 1.55rem) !important;
+    line-height: 1.1 !important;
+  }
+
+  .card-preview-subtitle {
+    font-size: 0.62rem !important;
+  }
+
+  .card-footer-groove {
+    min-height: 12px !important;
+  }
+
+  .tap-portfolio-hint {
+    font-size: 0.55rem !important;
+    padding: 0.08rem 0.35rem !important;
+  }
+
+  /* Portfolio View in Landscape */
+  .portfolio-navbar {
+    height: 36px !important;
+    margin: 3px 8px 0 !important;
+    padding: 0 0.55rem !important;
+    gap: 0.4rem !important;
+  }
+
+  .portfolio-back-btn {
+    font-size: 0.72rem !important;
+    padding: 0.22rem 0.55rem !important;
+  }
+
+  .portfolio-player-pill {
+    padding: 0.2rem 0.5rem !important;
+  }
+
+  .player-pill-token {
+    font-size: 0.95rem !important;
+  }
+
+  .player-pill-name {
+    font-size: 0.85rem !important;
+  }
+
+  .portfolio-asset-tag {
+    padding: 0.12rem 0.55rem !important;
+    border-radius: 8px !important;
+  }
+
+  .asset-tag-label {
+    font-size: 0.5rem !important;
+  }
+
+  .asset-tag-value {
+    font-size: 0.88rem !important;
+  }
+
+  .portfolio-nav-action-btn {
+    font-size: 0.7rem !important;
+    padding: 0.22rem 0.5rem !important;
+  }
+
+  .portfolio-carousel-stage {
+    padding: 4px 8px !important;
+    height: calc(100dvh - 42px) !important;
+  }
+
+  .deeds-carousel-track {
+    gap: 10px !important;
+    padding: 4px 6px !important;
+  }
+
+  .deed-carousel-card {
+    flex: 0 0 clamp(190px, 25vw, 225px) !important;
+    width: clamp(190px, 25vw, 225px) !important;
+    height: min(92%, 285px) !important;
+    border-radius: 14px !important;
+  }
+
+  .deed-card-banner {
+    padding: 0.35rem 0.45rem 0.3rem !important;
+  }
+
+  .banner-card-name {
+    font-size: 0.82rem !important;
+  }
+
+  .banner-type-tag {
+    font-size: 0.5rem !important;
+    margin-bottom: 0.1rem !important;
+  }
+
+  .deed-card-body {
+    padding: 0.4rem !important;
+    gap: 0.25rem !important;
+  }
+
+  .deed-rent-box {
+    padding: 0.25rem !important;
+  }
+
+  .rent-box-label {
+    font-size: 0.55rem !important;
+  }
+
+  .rent-box-amount {
+    font-size: 1.05rem !important;
+  }
+
+  .deed-erection-section {
+    padding: 0.3rem !important;
+    gap: 0.15rem !important;
+  }
+
+  .erection-title-row {
+    font-size: 0.6rem !important;
+  }
+
+  .stepper-btn {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 0.95rem !important;
+  }
+
+  .stepper-indicator {
+    font-size: 0.65rem !important;
+  }
+
+  .deed-asset-breakdown {
+    padding: 0.2rem 0.35rem !important;
+    font-size: 0.62rem !important;
+    margin-top: 0.15rem !important;
+  }
+
+  .deed-card-actions {
+    gap: 0.25rem !important;
+  }
+
+  .deed-action-btn {
+    padding: 0.3rem 0.2rem !important;
+    font-size: 0.62rem !important;
+  }
+
+  /* Modals in Horizontal Mobile */
+  .game-modal-overlay {
+    padding: 4px 8px !important;
+  }
+
+  .game-modal-content {
+    max-height: 96dvh !important;
+    width: 95vw !important;
+    max-width: 780px !important;
+    padding: 0.6rem 0.85rem !important;
+    border-radius: 14px !important;
+  }
+
+  .modal-header h3 {
+    font-size: 0.98rem !important;
+  }
+
+  .modal-close-btn {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 0.85rem !important;
+  }
+
+  .modal-description {
+    font-size: 0.72rem !important;
+    margin-bottom: 0.3rem !important;
+  }
+
+  /* Loans Manager in Landscape */
+  .loans-manager-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.45rem !important;
+    max-height: 68dvh !important;
+  }
+
+  .loan-player-card {
+    padding: 0.45rem 0.65rem !important;
+  }
+
+  .loan-player-identity .loan-token {
+    font-size: 1.15rem !important;
+  }
+
+  .loan-name {
+    font-size: 0.8rem !important;
+  }
+
+  .due-total, .avail-amount {
+    font-size: 0.88rem !important;
+  }
+
+  .loan-reason-input {
+    padding: 0.3rem 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .loan-btn {
+    padding: 0.4rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Trade Desk in Landscape */
+  .trade-desk-modal {
+    max-width: 96vw !important;
+    max-height: 96dvh !important;
+    padding: 0.55rem 0.75rem !important;
+  }
+
+  .trade-pods-grid {
+    grid-template-columns: 1fr 110px 1fr !important;
+    gap: 0.4rem !important;
+    height: 72dvh !important;
+  }
+
+  .trade-vertical-carousel {
+    max-height: calc(72dvh - 55px) !important;
+  }
+
+  .vertical-trade-card {
+    padding: 0.3rem 0.45rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  .execute-trade-btn {
+    padding: 0.4rem 0.55rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Lottery in Landscape */
+  .lottery-modal-content {
+    max-width: 720px !important;
+    max-height: 96dvh !important;
+  }
+
+  .type1-card-stage {
+    height: 140px !important;
+    max-width: 250px !important;
+    margin: 0.15rem auto !important;
+  }
+
+  .mystery-pattern {
+    font-size: 1.6rem !important;
+    margin-bottom: 0.1rem !important;
+  }
+
+  .mystery-title {
+    font-size: 0.75rem !important;
+  }
+
+  .mystery-badge {
+    font-size: 0.62rem !important;
+    padding: 0.2rem 0.6rem !important;
+    margin: 0.3rem 0 0.15rem !important;
+  }
+
+  .prize-trophy {
+    font-size: 1.6rem !important;
+  }
+
+  .prize-text {
+    font-size: 0.98rem !important;
+    margin: 0.2rem 0 !important;
+  }
+
+  .type2-player-turn-banner {
+    padding: 0.35rem 0.6rem !important;
+  }
+
+  .memory-cards-grid {
+    gap: 0.35rem !important;
+  }
+
+  .memory-card-box {
+    height: 52px !important;
+    aspect-ratio: unset !important;
+  }
+
+  .mem-icon {
+    font-size: 1.25rem !important;
+  }
+
+  /* Settlement in Landscape */
+  .settlement-players-list {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.4rem !important;
+    max-height: 58dvh !important;
+  }
+
+  .settlement-player-row {
+    padding: 0.4rem 0.6rem !important;
+  }
+
+  .settle-name {
+    font-size: 0.78rem !important;
+  }
+
+  .settle-cash-input {
+    padding: 0.25rem 0.45rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .btn-decide-winner {
+    padding: 0.55rem !important;
+    font-size: 0.82rem !important;
+  }
+
+  /* Podium in Landscape */
+  .podium-celebration-header {
+    padding: 0.3rem 0 0.5rem !important;
+  }
+
+  .podium-trophy-icon {
+    font-size: 2rem !important;
+  }
+
+  .podium-winner-title {
+    font-size: 1.15rem !important;
+  }
+
+  .podium-standings-list {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.35rem !important;
+    max-height: 48dvh !important;
+  }
+
+  .podium-rank-row {
+    padding: 0.35rem 0.55rem !important;
+    font-size: 0.75rem !important;
+  }
+}
