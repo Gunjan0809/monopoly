@@ -118,8 +118,9 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   // Active modal: 'switchPlayer' | 'totalDeck' | 'remainingDeck' | 'loans' | 'log' | 'endGame' | 'settlement' | 'podium' | 'pastGames' | 'addCard' | 'tradeDesk' | 'sellCard' | 'lottery'
   const [activeModal, setActiveModal] = useState(null);
 
-  // Selling modal state
-  const [sellingCardId, setSellingCardId] = useState(null);
+  // Selling / Liquidation Cart State (Fix 3)
+  const [sellSelectedCards, setSellSelectedCards] = useState([]); // [cardId] to liquidate completely
+  const [sellSelectedHouses, setSellSelectedHouses] = useState({}); // { [cardId]: countOfHousesToSell }
 
   // Trade Desk State
   const [tradePlayer1Id, setTradePlayer1Id] = useState(null);
@@ -139,6 +140,10 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   const [type1PrizeInput, setType1PrizeInput] = useState('₹500 Cash Prize & 1 Free House');
   const [type1ActivePrize, setType1ActivePrize] = useState('₹500 Cash Prize & 1 Free House');
   const [type1IsFlipped, setType1IsFlipped] = useState(false);
+  // Board-level sealed lottery box over player boxes (Fix 1)
+  const [isBoardLotteryVisible, setIsBoardLotteryVisible] = useState(true);
+  const [isBoardLotteryRevealed, setIsBoardLotteryRevealed] = useState(false);
+
   // Type 2: 10-Card Memory Match Loop
   const [type2PlayerIndex, setType2PlayerIndex] = useState(0); // Loops through players
   const [type2Cards, setType2Cards] = useState([]);
@@ -286,58 +291,146 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     setActiveModal(null);
   };
 
-  // ================= SELLING SYSTEM (0.9x FACTOR) =================
-  // Rule: Selling card, houses, or card with houses is paid at 0.9x actual gross value.
-  const handleSellPropertyToBank = (cardId) => {
-    const card = allCards.find((c) => c._id === cardId);
-    const own = ownership[cardId];
-    if (!card || !own) return;
+  // ================= PORTFOLIO SELLING / LIQUIDATION SYSTEM (0.9x FACTOR) =================
+  // Rule: Selling cards, houses, or cards with houses is paid at 0.9x actual gross value.
+  const handleOpenPortfolioSellModal = (preselectedCardId = null) => {
+    if (preselectedCardId) {
+      setSellSelectedCards([preselectedCardId]);
+    } else {
+      setSellSelectedCards([]);
+    }
+    setSellSelectedHouses({});
+    setActiveModal('portfolioSell');
+  };
 
-    const landValue = Number(card.buyingCost) || 0;
-    const erections = Number(own.erections) || 0;
-    const erectionCost = Number(card.buildingCost) || 0;
-    const grossTotal = landValue + (erections * erectionCost);
-    const payout = Math.round(0.9 * grossTotal);
+  const toggleSelectCardToSell = (cardId) => {
+    setSellSelectedCards((prev) => {
+      const isSelected = prev.includes(cardId);
+      if (isSelected) {
+        return prev.filter((id) => id !== cardId);
+      } else {
+        // Reset individual houses selection for this card since whole card is being sold
+        setSellSelectedHouses((hPrev) => {
+          const nextH = { ...hPrev };
+          delete nextH[cardId];
+          return nextH;
+        });
+        return [...prev, cardId];
+      }
+    });
+  };
 
-    const player = gamePlayers.find((p) => p.id === own.ownerId);
+  const updateHousesToSell = (cardId, delta, maxErections) => {
+    setSellSelectedHouses((prev) => {
+      const current = prev[cardId] || 0;
+      const nextCount = Math.max(0, Math.min(maxErections, current + delta));
+      if (nextCount === 0) {
+        const copy = { ...prev };
+        delete copy[cardId];
+        return copy;
+      }
+      return { ...prev, [cardId]: nextCount };
+    });
+  };
 
-    // Remove property from ownership back to Bank Vault
+  const calculatePortfolioSale = (cardsList) => {
+    let grossPlots = 0;
+    let grossHousesOnSoldCards = 0;
+    let grossIndividualHouses = 0;
+    const itemsList = [];
+
+    cardsList.forEach((card) => {
+      const own = ownership[card._id] || { erections: 0 };
+      const currentErections = Number(own.erections) || 0;
+      const landCost = Number(card.buyingCost) || 0;
+      const buildingCost = Number(card.buildingCost) || 0;
+
+      if (sellSelectedCards.includes(card._id)) {
+        // Entire card is selected to be sold (plot + all erections on it)
+        grossPlots += landCost;
+        const housesVal = currentErections * buildingCost;
+        grossHousesOnSoldCards += housesVal;
+        itemsList.push({
+          type: 'card',
+          cardId: card._id,
+          name: card.name,
+          color: card.color,
+          erections: currentErections,
+          detail: currentErections > 0
+            ? `Plot (₹${landCost}) + ${currentErections} house(s) (₹${housesVal})`
+            : `Plot (₹${landCost})`,
+          gross: landCost + housesVal,
+        });
+      } else {
+        // Specific houses on card are selected to be sold
+        const housesCount = Number(sellSelectedHouses[card._id]) || 0;
+        if (housesCount > 0) {
+          const housesVal = housesCount * buildingCost;
+          grossIndividualHouses += housesVal;
+          itemsList.push({
+            type: 'houses',
+            cardId: card._id,
+            name: card.name,
+            color: card.color,
+            count: housesCount,
+            detail: `${housesCount} house(s) on ${card.name} (₹${buildingCost} ea)`,
+            gross: housesVal,
+          });
+        }
+      }
+    });
+
+    const totalGross = grossPlots + grossHousesOnSoldCards + grossIndividualHouses;
+    const payout09 = Math.round(0.9 * totalGross);
+
+    return {
+      grossPlots,
+      grossHouses: grossHousesOnSoldCards + grossIndividualHouses,
+      totalGross,
+      payout09,
+      itemsList,
+    };
+  };
+
+  const handleExecutePortfolioSale = (cardsList) => {
+    const sale = calculatePortfolioSale(cardsList);
+    if (sale.itemsList.length === 0) {
+      showToast('Select at least one card or house to sell!');
+      return;
+    }
+
+    const player = gamePlayers.find((p) => p.id === viewingPortfolioPlayerId);
+
+    // 1. Update ownership
     setOwnership((prev) => {
       const next = { ...prev };
-      delete next[cardId];
+      // Delete completely sold cards
+      sellSelectedCards.forEach((cardId) => {
+        delete next[cardId];
+      });
+      // Deduct sold houses on remaining cards
+      Object.entries(sellSelectedHouses).forEach(([cardId, countToSell]) => {
+        if (!sellSelectedCards.includes(cardId) && countToSell > 0 && next[cardId]) {
+          const currentErections = next[cardId].erections || 0;
+          next[cardId] = {
+            ...next[cardId],
+            erections: Math.max(0, currentErections - countToSell),
+          };
+        }
+      });
       return next;
     });
 
+    // 2. Log and toast
+    const itemsSummary = sale.itemsList.map((i) => i.name).join(', ');
     setGameLogs((prev) => [
-      `💰 ${player?.name} liquidated ${card.name} (${erections} houses) to Bank for ₹${payout} (0.9x of ₹${grossTotal}).`,
+      `💰 ${player?.name} liquidated [${itemsSummary}] to Bank for ₹${sale.payout09} (0.9x of actual ₹${sale.totalGross}).`,
       ...prev,
     ]);
-    showToast(`Sold ${card.name}! Bank pays ₹${payout} (0.9x value).`);
+    showToast(`Sale confirmed! Bank pays ₹${sale.payout09} (0.9x value).`);
     setActiveModal(null);
-    setSellingCardId(null);
-  };
-
-  const handleSellOneHouse = (cardId) => {
-    const card = allCards.find((c) => c._id === cardId);
-    const own = ownership[cardId];
-    if (!card || !own || (own.erections || 0) <= 0) return;
-
-    const erectionCost = Number(card.buildingCost) || 0;
-    const payout = Math.round(0.9 * erectionCost);
-    const player = gamePlayers.find((p) => p.id === own.ownerId);
-
-    setOwnership((prev) => ({
-      ...prev,
-      [cardId]: { ...prev[cardId], erections: prev[cardId].erections - 1 },
-    }));
-
-    setGameLogs((prev) => [
-      `🏠 ${player?.name} sold 1 house on ${card.name} to Bank for ₹${payout} (0.9x of ₹${erectionCost}).`,
-      ...prev,
-    ]);
-    showToast(`Demolished 1 house! Bank pays ₹${payout} (0.9x).`);
-    setActiveModal(null);
-    setSellingCardId(null);
+    setSellSelectedCards([]);
+    setSellSelectedHouses({});
   };
 
   // Take Back Card from Player to Bank (administrative)
@@ -624,8 +717,17 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
         showToast(`${curPlayer.name} won ₹500 in the Lottery!`);
         setTimeout(() => setType2FlippedIndices([]), 800);
       } else {
-        // Not a match, flip back
-        setTimeout(() => setType2FlippedIndices([]), 1000);
+        // Miss! User rule: automatically refresh deck and advance to next player's turn
+        const curPlayer = gamePlayers[type2PlayerIndex];
+        setType2WinnerAlert(`❌ Missed! Advancing turn...`);
+        setTimeout(() => {
+          setType2FlippedIndices([]);
+          const nextIdx = (type2PlayerIndex + 1) % gamePlayers.length;
+          const nextPlayer = gamePlayers[nextIdx];
+          setType2PlayerIndex(nextIdx);
+          initMemoryMatchDeck();
+          showToast(`No match for ${curPlayer?.name}. Deck refreshed for ${nextPlayer?.name}!`);
+        }, 900);
       }
     }
   };
@@ -763,6 +865,72 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
             </div>
           </nav>
 
+          {/* SEALED LOTTERY PRIZE OVER PLAYER BOXES (Fix 1) */}
+          {isBoardLotteryVisible && (
+            <div className="board-lottery-anchor">
+              <div
+                className={`board-sealed-lottery-card ${isBoardLotteryRevealed ? 'is-revealed' : ''}`}
+                onClick={() => {
+                  if (!isBoardLotteryRevealed) {
+                    setIsBoardLotteryRevealed(true);
+                    showToast(`🎉 Prize Revealed: ${type1ActivePrize}`);
+                  }
+                }}
+              >
+                <div className="board-lottery-flipper">
+                  {/* Front: Sealed State */}
+                  <div className="b-face b-face-front">
+                    <div className="b-left-block">
+                      <span className="b-dice-icon">🎲</span>
+                      <div className="b-info-block">
+                        <span className="b-status-pill">OFFICIAL LOTTERY SEALED 🔒</span>
+                        <span className="b-action-title">Tap to Reveal Winner&rsquo;s Prize</span>
+                      </div>
+                    </div>
+                    <div className="b-tap-prompt">
+                      <span>TAP TO REVEAL 🎁</span>
+                    </div>
+                  </div>
+
+                  {/* Back: Revealed State */}
+                  <div className="b-face b-face-back">
+                    <div className="b-left-block">
+                      <span className="b-trophy-icon">🏆</span>
+                      <div className="b-info-block">
+                        <span className="b-congrats-pill">CONGRATULATIONS! 🎉</span>
+                        <strong className="b-prize-val">{type1ActivePrize}</strong>
+                      </div>
+                    </div>
+                    <div className="b-back-actions">
+                      <button
+                        type="button"
+                        className="b-btn b-btn-reseal"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsBoardLotteryRevealed(false);
+                          showToast('Prize Resealed inside Card!');
+                        }}
+                      >
+                        🔄 Reseal
+                      </button>
+                      <button
+                        type="button"
+                        className="b-btn b-btn-close"
+                        title="Dismiss Lottery Banner"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsBoardLotteryVisible(false);
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* MAIN PLAYER BOXES CONTAINER (Tap opens Portfolio!) */}
           <main className="player-boxes-stage" style={{ '--player-count': gamePlayers.length }}>
             <div className="cards-deck-container">
@@ -867,6 +1035,15 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                 title="Banker: Add Property from Database to Portfolio"
               >
                 ➕ Add Card
+              </button>
+
+              <button
+                type="button"
+                className="portfolio-nav-action-btn btn-portfolio-sell"
+                onClick={() => handleOpenPortfolioSellModal()}
+                title="Liquidate cards and houses back to Bank at 0.9x value"
+              >
+                💰 Sell Assets (0.9x)
               </button>
 
               <button
@@ -995,11 +1172,8 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                           <button
                             type="button"
                             className="deed-action-btn btn-sell-action"
-                            onClick={() => {
-                              setSellingCardId(card._id);
-                              setActiveModal('sellCard');
-                            }}
-                            title="Liquidate card and houses to Bank at 0.9x value"
+                            onClick={() => handleOpenPortfolioSellModal(card._id)}
+                            title="Liquidate cards and houses to Bank at 0.9x value"
                           >
                             💰 Sell (0.9x)
                           </button>
@@ -1043,13 +1217,18 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
       )}
 
       {/* =========================================================================
-          MODAL: SELL / LIQUIDATION SYSTEM (0.9x FACTOR)
+          MODAL: PORTFOLIO LIQUIDATION / MULTI-ITEM SELL BASKET (0.9x FACTOR)
           ========================================================================= */}
-      {activeModal === 'sellCard' && sellingCard && (
+      {activeModal === 'portfolioSell' && viewingPortfolioPlayerId && (
         <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
-          <div className="game-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="game-modal-content modal-large portfolio-sell-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>💰 Liquidate Property to Bank (0.9x Value)</h3>
+              <div>
+                <h3>💰 Sell Assets ({portfolioPlayer?.name})</h3>
+                <p className="modal-subtitle-note">
+                  Select cards or houses to liquidate back to the Bank. All items are redeemed at <strong>90% (0.9x)</strong> of their actual value:
+                </p>
+              </div>
               <button
                 type="button"
                 className="modal-close-btn"
@@ -1058,72 +1237,155 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                 ✕
               </button>
             </div>
-            <p className="modal-description">
-              Properties and erections sold back to the Bank are redeemed at <strong>90% (0.9x)</strong> of their actual value:
-            </p>
 
-            {(() => {
-              const landVal = Number(sellingCard.buyingCost) || 0;
-              const erectionCount = Number(sellingCardOwn.erections) || 0;
-              const erectionCost = Number(sellingCard.buildingCost) || 0;
-              const erectionsTotalVal = erectionCount * erectionCost;
-              const totalGross = landVal + erectionsTotalVal;
-              const fullPayout = Math.round(0.9 * totalGross);
-              const oneHousePayout = Math.round(0.9 * erectionCost);
+            {portfolioCards.length === 0 ? (
+              <div className="modal-empty-state">
+                {portfolioPlayer?.name} does not own any property deeds to sell!
+              </div>
+            ) : (
+              <div className="portfolio-sell-workspace">
+                {/* Left Column: Properties & Erections Picker */}
+                <div className="sell-items-picker-col">
+                  <h4 className="picker-col-title">Available Portfolio Properties ({portfolioCards.length})</h4>
+                  <div className="sell-items-cards-list">
+                    {portfolioCards.map((card) => {
+                      const cardOwn = ownership[card._id] || { erections: 0 };
+                      const erections = Number(cardOwn.erections) || 0;
+                      const landCost = Number(card.buyingCost) || 0;
+                      const buildingCost = Number(card.buildingCost) || 0;
+                      const isCardChecked = sellSelectedCards.includes(card._id);
+                      const housesCount = Number(sellSelectedHouses[card._id]) || 0;
+                      const bColor = normalizeCardColor(card.color, card.type);
 
-              return (
-                <div className="liquidation-calculator-panel">
-                  <div className="liquidation-item-header">
-                    <h4>{sellingCard.name}</h4>
-                    <span className="liquidation-owner">Owner: {portfolioPlayer?.name}</span>
-                  </div>
+                      return (
+                        <div
+                          key={card._id}
+                          className={`sell-card-selection-row ${isCardChecked ? 'row-card-selected' : ''} ${housesCount > 0 ? 'row-houses-selected' : ''}`}
+                        >
+                          <div className="sell-row-header">
+                            <div className="sell-row-title-wrap">
+                              <span className="sell-color-pip" style={{ backgroundColor: bColor }} />
+                              <div>
+                                <strong className="sell-prop-name">{card.name}</strong>
+                                <span className="sell-prop-details">
+                                  Plot: ₹{landCost}
+                                  {buildingCost > 0 && ` • House: ₹${buildingCost} ea`}
+                                  {erections > 0 && ` • (${erections} ${erections === 5 ? 'Hotel' : 'Houses'})`}
+                                </span>
+                              </div>
+                            </div>
 
-                  <div className="liquidation-receipt-box">
-                    <div className="receipt-line">
-                      <span>Land Purchase Cost:</span>
-                      <strong>₹{landVal}</strong>
-                    </div>
-                    {erectionCount > 0 && (
-                      <div className="receipt-line">
-                        <span>Erections ({erectionCount}x ₹{erectionCost}):</span>
-                        <strong>₹{erectionsTotalVal}</strong>
-                      </div>
-                    )}
-                    <div className="receipt-line gross-line">
-                      <span>Total Actual Value:</span>
-                      <strong>₹{totalGross}</strong>
-                    </div>
-                    <div className="receipt-line rate-line">
-                      <span>Liquidation Multiplier:</span>
-                      <strong>0.9x</strong>
-                    </div>
-                    <div className="receipt-line payout-line">
-                      <span>Bank Payout to Player:</span>
-                      <strong className="payout-amount">₹{fullPayout}</strong>
-                    </div>
-                  </div>
+                            {/* Checkbox: Sell Entire Card (Plot + All Erections) */}
+                            <label className="sell-whole-card-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={isCardChecked}
+                                onChange={() => toggleSelectCardToSell(card._id)}
+                              />
+                              <span>Sell Entire Card</span>
+                            </label>
+                          </div>
 
-                  <div className="liquidation-action-buttons">
-                    {erectionCount > 0 && (
-                      <button
-                        type="button"
-                        className="btn-sell-house-only"
-                        onClick={() => handleSellOneHouse(sellingCard._id)}
-                      >
-                        Sell 1 House Only (Receive ₹{oneHousePayout})
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="btn-sell-entire"
-                      onClick={() => handleSellPropertyToBank(sellingCard._id)}
-                    >
-                      Sell Entire Property + Erections (Receive ₹{fullPayout})
-                    </button>
+                          {/* Houses Stepper (Available when whole card is NOT selected, and has erections) */}
+                          {!isCardChecked && erections > 0 && (
+                            <div className="sell-houses-stepper-wrap">
+                              <span className="stepper-label">Sell Houses Only:</span>
+                              <div className="sell-houses-stepper">
+                                <button
+                                  type="button"
+                                  className="sell-step-btn"
+                                  disabled={housesCount <= 0}
+                                  onClick={() => updateHousesToSell(card._id, -1, erections)}
+                                >
+                                  –
+                                </button>
+                                <span className="sell-step-count">
+                                  {housesCount} of {erections} House(s)
+                                </span>
+                                <button
+                                  type="button"
+                                  className="sell-step-btn"
+                                  disabled={housesCount >= erections}
+                                  onClick={() => updateHousesToSell(card._id, 1, erections)}
+                                >
+                                  +
+                                </button>
+                              </div>
+                              {housesCount > 0 && (
+                                <span className="houses-payout-preview">
+                                  = ₹{housesCount * buildingCost} (Gross)
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              );
-            })()}
+
+                {/* Right Column: Real-Time Liquidation Calculation & Receipt */}
+                {(() => {
+                  const sale = calculatePortfolioSale(portfolioCards);
+
+                  return (
+                    <div className="sell-calculation-receipt-col">
+                      <h4 className="receipt-col-title">🧾 Liquidation Calculation</h4>
+
+                      <div className="sell-receipt-box">
+                        <div className="receipt-items-breakdown">
+                          {sale.itemsList.length === 0 ? (
+                            <div className="receipt-no-items">
+                              No items selected. Check &ldquo;Sell Entire Card&rdquo; or pick houses to liquidate on the left.
+                            </div>
+                          ) : (
+                            sale.itemsList.map((item, idx) => (
+                              <div key={idx} className="receipt-selected-line">
+                                <span>• {item.name}: {item.detail}</span>
+                                <strong>₹{item.gross}</strong>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        <div className="receipt-financial-totals">
+                          <div className="r-line gross-total">
+                            <span>Total Actual Asset Value:</span>
+                            <strong>₹{sale.totalGross}</strong>
+                          </div>
+                          <div className="r-line rate-spec">
+                            <span>Liquidation Multiplier:</span>
+                            <strong>0.9x</strong>
+                          </div>
+                          <div className="r-line final-payout">
+                            <span>Bank Payout to Player:</span>
+                            <strong className="final-payout-figure">₹{sale.payout09}</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="sell-modal-footer-actions">
+                        <button
+                          type="button"
+                          className="btn-cancel"
+                          onClick={() => setActiveModal(null)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-confirm-portfolio-sale"
+                          disabled={sale.itemsList.length === 0}
+                          onClick={() => handleExecutePortfolioSale(portfolioCards)}
+                        >
+                          Confirm Sale (Bank Pays ₹{sale.payout09}) 💰
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         </div>
       )}
