@@ -100,9 +100,19 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   // Starts completely clean with zero placeholders!
   const [ownership, setOwnership] = useState({});
 
-  const [activeModal, setActiveModal] = useState(null); // 'switchPlayer' | 'totalDeck' | 'remainingDeck' | 'trade' | 'loans' | 'log' | 'endGame' | 'addCard' | 'tradeCard'
-  const [tradeSelectedCardId, setTradeSelectedCardId] = useState(null);
-  const [tradeTargetPlayerId, setTradeTargetPlayerId] = useState(null);
+  // Loan state: { [playerId]: { hasActiveLoan: bool, principal: 500, interest: 25, totalDue: 525 } }
+  const [loans, setLoans] = useState({});
+
+  // Active modal: 'switchPlayer' | 'totalDeck' | 'remainingDeck' | 'loans' | 'log' | 'endGame' | 'addCard' | 'tradeDesk'
+  const [activeModal, setActiveModal] = useState(null);
+
+  // Trade Desk State
+  const [tradePlayer1Id, setTradePlayer1Id] = useState(null);
+  const [tradePlayer2Id, setTradePlayer2Id] = useState(null);
+  const [tradeOfferedCards1, setTradeOfferedCards1] = useState([]); // Array of card IDs from Player 1
+  const [tradeOfferedCards2, setTradeOfferedCards2] = useState([]); // Array of card IDs from Player 2
+  const [isTradeAnimating, setIsTradeAnimating] = useState(false);
+
   const [toastMessage, setToastMessage] = useState(null);
   const [gameLogs, setGameLogs] = useState([
     `Game session initialized with ${gamePlayers.length} players.`,
@@ -211,25 +221,6 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     showToast(`Returned ${card?.name} to Bank Vault`);
   };
 
-  // Trade Card from Player to Another Player
-  const handleTradeCard = (cardId, toPlayerId) => {
-    if (!toPlayerId) return;
-    const card = allCards.find((c) => c._id === cardId);
-    const fromPlayer = gamePlayers.find((p) => p.id === ownership[cardId]?.ownerId);
-    const toPlayer = gamePlayers.find((p) => p.id === Number(toPlayerId));
-
-    setOwnership((prev) => ({
-      ...prev,
-      [cardId]: { ...prev[cardId], ownerId: Number(toPlayerId) },
-    }));
-
-    setGameLogs((prev) => [`Traded ${card?.name} from ${fromPlayer?.name} to ${toPlayer?.name}.`, ...prev]);
-    showToast(`Traded ${card?.name} to ${toPlayer?.name}!`);
-    setActiveModal(null);
-    setTradeSelectedCardId(null);
-    setTradeTargetPlayerId(null);
-  };
-
   // Increment/Decrement Erections on a card
   const handleUpdateErections = (cardId, delta) => {
     const current = ownership[cardId]?.erections || 0;
@@ -242,11 +233,173 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     showToast(`Updated to ${label}`);
   };
 
-  // Unowned cards in Bank Vault
+  // ================= LOAN SYSTEM LOGIC =================
+  // Rule: Max ₹500 loan. Once given, limit is OVER. Next loan only allowed after repaying with 5% interest (₹525 total).
+  const handleGrantLoan = (playerId) => {
+    const player = gamePlayers.find((p) => p.id === playerId);
+    if (loans[playerId]?.hasActiveLoan) {
+      showToast(`Cannot issue loan: ${player?.name} already has an active loan limit!`);
+      return;
+    }
+    setLoans((prev) => ({
+      ...prev,
+      [playerId]: {
+        hasActiveLoan: true,
+        principal: 500,
+        interest: 25, // 5% of 500
+        totalDue: 525,
+      },
+    }));
+    setGameLogs((prev) => [
+      `🏦 Bank granted ₹500 loan to ${player?.name}. (Limit reached. Repayment due: ₹525 with 5% interest)`,
+      ...prev,
+    ]);
+    showToast(`₹500 loan approved for ${player?.name}!`);
+  };
+
+  const handleRepayLoan = (playerId) => {
+    const player = gamePlayers.find((p) => p.id === playerId);
+    if (!loans[playerId]?.hasActiveLoan) {
+      showToast(`${player?.name} has no outstanding loans.`);
+      return;
+    }
+    setLoans((prev) => ({
+      ...prev,
+      [playerId]: {
+        hasActiveLoan: false,
+        principal: 0,
+        interest: 0,
+        totalDue: 0,
+      },
+    }));
+    setGameLogs((prev) => [
+      `💳 ${player?.name} repaid full loan of ₹525 (₹500 principal + ₹25 5% interest). Loan limit restored!`,
+      ...prev,
+    ]);
+    showToast(`Loan repaid! ₹500 limit restored for ${player?.name}.`);
+  };
+
+  // ================= TRADE DESK LOGIC =================
+  // Toggle card selection in Player 1's trade box
+  const toggleTradeCard1 = (cardId) => {
+    setTradeOfferedCards1((prev) =>
+      prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId]
+    );
+  };
+
+  // Toggle card selection in Player 2's trade box
+  const toggleTradeCard2 = (cardId) => {
+    setTradeOfferedCards2((prev) =>
+      prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId]
+    );
+  };
+
+  // Direct 1-tap trade from Player 1 to Player 2
+  const handleQuickSendToPlayer2 = (cardId) => {
+    if (!tradePlayer2Id) {
+      showToast('Select Trader 2 first!');
+      return;
+    }
+    const card = allCards.find((c) => c._id === cardId);
+    const p1 = gamePlayers.find((p) => p.id === tradePlayer1Id);
+    const p2 = gamePlayers.find((p) => p.id === tradePlayer2Id);
+
+    setOwnership((prev) => ({
+      ...prev,
+      [cardId]: { ...prev[cardId], ownerId: tradePlayer2Id },
+    }));
+
+    setTradeOfferedCards1((prev) => prev.filter((id) => id !== cardId));
+    setGameLogs((prev) => [`🤝 Trade: ${p1?.name} gave ${card?.name} to ${p2?.name}.`, ...prev]);
+    showToast(`Transferred ${card?.name} to ${p2?.name}!`);
+  };
+
+  // Direct 1-tap trade from Player 2 to Player 1
+  const handleQuickSendToPlayer1 = (cardId) => {
+    if (!tradePlayer1Id) {
+      showToast('Select Trader 1 first!');
+      return;
+    }
+    const card = allCards.find((c) => c._id === cardId);
+    const p1 = gamePlayers.find((p) => p.id === tradePlayer1Id);
+    const p2 = gamePlayers.find((p) => p.id === tradePlayer2Id);
+
+    setOwnership((prev) => ({
+      ...prev,
+      [cardId]: { ...prev[cardId], ownerId: tradePlayer1Id },
+    }));
+
+    setTradeOfferedCards2((prev) => prev.filter((id) => id !== cardId));
+    setGameLogs((prev) => [`🤝 Trade: ${p2?.name} gave ${card?.name} to ${p1?.name}.`, ...prev]);
+    showToast(`Transferred ${card?.name} to ${p1?.name}!`);
+  };
+
+  // Execute full bilateral or unilateral trade of all selected cards
+  const handleExecuteTrade = () => {
+    if (!tradePlayer1Id || !tradePlayer2Id) {
+      showToast('Please select both traders to execute trade.');
+      return;
+    }
+    if (tradePlayer1Id === tradePlayer2Id) {
+      showToast('Cannot trade between the same player.');
+      return;
+    }
+    if (tradeOfferedCards1.length === 0 && tradeOfferedCards2.length === 0) {
+      showToast('Select at least one deed from either trader to transfer.');
+      return;
+    }
+
+    const p1 = gamePlayers.find((p) => p.id === tradePlayer1Id);
+    const p2 = gamePlayers.find((p) => p.id === tradePlayer2Id);
+
+    setIsTradeAnimating(true);
+
+    setTimeout(() => {
+      setOwnership((prev) => {
+        const next = { ...prev };
+        // Transfer all Player 1 selected cards to Player 2
+        tradeOfferedCards1.forEach((cId) => {
+          if (next[cId]) next[cId] = { ...next[cId], ownerId: tradePlayer2Id };
+        });
+        // Transfer all Player 2 selected cards to Player 1
+        tradeOfferedCards2.forEach((cId) => {
+          if (next[cId]) next[cId] = { ...next[cId], ownerId: tradePlayer1Id };
+        });
+        return next;
+      });
+
+      const cards1Names = allCards
+        .filter((c) => tradeOfferedCards1.includes(c._id))
+        .map((c) => c.name)
+        .join(', ');
+      const cards2Names = allCards
+        .filter((c) => tradeOfferedCards2.includes(c._id))
+        .map((c) => c.name)
+        .join(', ');
+
+      setGameLogs((prev) => [
+        `🤝 Multi-Trade Completed between ${p1?.name} & ${p2?.name}: [${cards1Names || 'None'}] ⇄ [${cards2Names || 'None'}].`,
+        ...prev,
+      ]);
+
+      setTradeOfferedCards1([]);
+      setTradeOfferedCards2([]);
+      setIsTradeAnimating(false);
+      showToast(`Trade completed successfully! Deeds transferred.`);
+    }, 600);
+  };
+
+  // Helper arrays
   const remainingCards = allCards.filter((card) => !ownership[card._id]);
   const activePlayer = gamePlayers[activePlayerIndex] || gamePlayers[0];
   const portfolioPlayer = gamePlayers.find((p) => p.id === viewingPortfolioPlayerId);
   const portfolioCards = allCards.filter((card) => ownership[card._id]?.ownerId === viewingPortfolioPlayerId);
+
+  // Trade Desk Party Cards
+  const trader1 = gamePlayers.find((p) => p.id === tradePlayer1Id);
+  const trader2 = gamePlayers.find((p) => p.id === tradePlayer2Id);
+  const trader1Cards = allCards.filter((card) => ownership[card._id]?.ownerId === tradePlayer1Id);
+  const trader2Cards = allCards.filter((card) => ownership[card._id]?.ownerId === tradePlayer2Id);
 
   return (
     <div className="mobile-game-wrapper">
@@ -292,16 +445,18 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                 <span>Remaining Deck ({remainingCards.length})</span>
               </button>
 
+              {/* Trade Desk Button */}
               <button
                 type="button"
-                className="nav-item-btn nav-btn-locked"
-                onClick={() => showToast('🔒 Trade feature is locked (Coming soon)')}
-                title="Trade Properties (Locked)"
+                className="nav-item-btn nav-btn-trade"
+                onClick={() => setActiveModal('tradeDesk')}
+                title="Open Bank Trade Desk"
               >
                 <span className="nav-icon">🤝</span>
-                <span>Trade (Locked)</span>
+                <span>Trade Desk</span>
               </button>
 
+              {/* Loans Button */}
               <button
                 type="button"
                 className="nav-item-btn"
@@ -342,6 +497,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                 const isActive = index === activePlayerIndex;
                 const assetVal = calculatePlayerAssetValue(player.id);
                 const cardCount = allCards.filter((c) => ownership[c._id]?.ownerId === player.id).length;
+                const playerLoan = loans[player.id];
 
                 return (
                   <div
@@ -368,6 +524,11 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                       {isActive && (
                         <span className="card-active-pill">
                           👑 TURN
+                        </span>
+                      )}
+                      {playerLoan?.hasActiveLoan && (
+                        <span className="card-loan-active-badge" title="Active ₹525 Loan Due">
+                          💰 LOAN
                         </span>
                       )}
                     </div>
@@ -439,15 +600,12 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                 type="button"
                 className="portfolio-nav-action-btn"
                 onClick={() => {
-                  if (portfolioCards.length === 0) {
-                    showToast('No cards to trade in this portfolio!');
-                  } else {
-                    setActiveModal('tradeCard');
-                  }
+                  setTradePlayer1Id(portfolioPlayer.id);
+                  setActiveModal('tradeDesk');
                 }}
-                title="Trade a card to another player"
+                title="Trade properties in Trade Desk"
               >
-                🔄 Trade Card
+                🤝 Trade Desk
               </button>
             </div>
           </nav>
@@ -559,8 +717,9 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                             type="button"
                             className="deed-action-btn btn-trade"
                             onClick={() => {
-                              setTradeSelectedCardId(card._id);
-                              setActiveModal('tradeCard');
+                              setTradePlayer1Id(portfolioPlayer.id);
+                              setTradeOfferedCards1([card._id]);
+                              setActiveModal('tradeDesk');
                             }}
                           >
                             🤝 Trade Card
@@ -640,12 +799,19 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
         </div>
       )}
 
-      {/* ================= MODAL: TRADE CARD TO ANOTHER PLAYER ================= */}
-      {activeModal === 'tradeCard' && viewingPortfolioPlayerId && (
+      {/* =========================================================================
+          MODAL: TWO-BOX TRADE DESK (WITH VERTICAL CAROUSELS & SWAP ANIMATION)
+          ========================================================================= */}
+      {activeModal === 'tradeDesk' && (
         <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
-          <div className="game-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Trade Property from {portfolioPlayer?.name}</h3>
+          <div className="game-modal-content trade-desk-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header trade-modal-header">
+              <div>
+                <h3 className="trade-modal-title">🤝 Bank Property Trade Desk</h3>
+                <p className="trade-modal-sub">
+                  Select both traders to view their vertical card decks. Offer cards from either or both parties!
+                </p>
+              </div>
               <button
                 type="button"
                 className="modal-close-btn"
@@ -654,64 +820,270 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                 ✕
               </button>
             </div>
-            <p className="modal-description">
-              Select the deed to transfer and the receiving player:
-            </p>
 
-            {/* Select Card to trade */}
-            <div className="trade-select-group">
-              <label>1. Select Deed to Trade:</label>
-              <select
-                className="trade-dropdown"
-                value={tradeSelectedCardId || (portfolioCards[0]?._id || '')}
-                onChange={(e) => setTradeSelectedCardId(e.target.value)}
-              >
-                {portfolioCards.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name} (Value: ₹{c.buyingCost})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* TWO TRADING BOXES CONTAINER */}
+            <div className={`trade-pods-grid ${isTradeAnimating ? 'trade-swapping-glow' : ''}`}>
+              {/* ================= TRADER 1 BOX ================= */}
+              <div className="trade-party-pod pod-left">
+                {/* Header or Placeholder */}
+                {trader1 ? (
+                  <div className="trade-pod-header">
+                    <div className="pod-header-user">
+                      <span className="pod-avatar">{trader1.token?.icon || '👤'}</span>
+                      <div>
+                        <h4 className="pod-player-name">{trader1.name}</h4>
+                        <span className="pod-card-counter">{trader1Cards.length} Properties</span>
+                      </div>
+                    </div>
+                    <select
+                      className="pod-change-select"
+                      value={tradePlayer1Id || ''}
+                      onChange={(e) => {
+                        setTradePlayer1Id(Number(e.target.value));
+                        setTradeOfferedCards1([]);
+                      }}
+                    >
+                      {gamePlayers.map((p) => (
+                        <option key={p.id} value={p.id} disabled={p.id === tradePlayer2Id}>
+                          {p.token?.icon} {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="trade-pod-placeholder">
+                    <div className="placeholder-icon">👤</div>
+                    <h4>Trader 1 Placeholder</h4>
+                    <p>Select first party for trade</p>
+                    <select
+                      className="placeholder-player-select"
+                      value=""
+                      onChange={(e) => {
+                        setTradePlayer1Id(Number(e.target.value));
+                        setTradeOfferedCards1([]);
+                      }}
+                    >
+                      <option value="" disabled>Select Trader 1...</option>
+                      {gamePlayers
+                        .filter((p) => p.id !== tradePlayer2Id)
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.token?.icon} {p.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
 
-            {/* Select Target Player */}
-            <div className="trade-select-group">
-              <label>2. Transfer To Player:</label>
-              <select
-                className="trade-dropdown"
-                value={tradeTargetPlayerId || ''}
-                onChange={(e) => setTradeTargetPlayerId(e.target.value)}
-              >
-                <option value="" disabled>Select Target Player...</option>
-                {gamePlayers
-                  .filter((p) => p.id !== viewingPortfolioPlayerId)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.token?.icon || '👤'} {p.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
+                {/* Vertical Carousel of Trader 1's Cards */}
+                {trader1 && (
+                  <div className="trade-vertical-carousel">
+                    {trader1Cards.length === 0 ? (
+                      <div className="pod-empty-cards">
+                        <span>No deeds owned by {trader1.name}.</span>
+                      </div>
+                    ) : (
+                      trader1Cards.map((card) => {
+                        const isOffered = tradeOfferedCards1.includes(card._id);
+                        const bColor = normalizeCardColor(card.color, card.type);
+                        const own = ownership[card._id] || { erections: 0 };
 
-            <div className="trade-actions-row">
-              <button
-                type="button"
-                className="btn-cancel"
-                onClick={() => setActiveModal(null)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn-confirm-trade"
-                disabled={!tradeTargetPlayerId}
-                onClick={() => {
-                  const cardId = tradeSelectedCardId || portfolioCards[0]?._id;
-                  handleTradeCard(cardId, tradeTargetPlayerId);
-                }}
-              >
-                Complete Trade 🤝
-              </button>
+                        return (
+                          <div
+                            key={card._id}
+                            className={`vertical-trade-card ${isOffered ? 'card-offered' : ''}`}
+                            onClick={() => toggleTradeCard1(card._id)}
+                          >
+                            <div className="v-card-strip" style={{ backgroundColor: bColor }} />
+                            <div className="v-card-details">
+                              <span className="v-card-title">{card.name}</span>
+                              <span className="v-card-sub">
+                                Buy: ₹{card.buyingCost} • Base: ₹{card.baseRent || card.rent1 || 0}
+                                {own.erections > 0 && ` • (${own.erections}H)`}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              className={`v-offer-toggle-btn ${isOffered ? 'btn-active-offer' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleTradeCard1(card._id);
+                              }}
+                            >
+                              {isOffered ? '✓ Offered' : '+ Offer'}
+                            </button>
+                            {trader2 && (
+                              <button
+                                type="button"
+                                className="v-quick-transfer-btn"
+                                title={`Send directly to ${trader2.name}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleQuickSendToPlayer2(card._id);
+                                }}
+                              >
+                                Send ➔
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* ================= CENTRAL EXCHANGE HUB ================= */}
+              <div className="trade-center-bridge">
+                <div className="trade-direction-indicator">
+                  {tradeOfferedCards1.length > 0 && tradeOfferedCards2.length > 0 ? (
+                    <span className="bridge-arrow-icon mutual-pulse">⇄</span>
+                  ) : tradeOfferedCards1.length > 0 ? (
+                    <span className="bridge-arrow-icon right-pulse">➔</span>
+                  ) : tradeOfferedCards2.length > 0 ? (
+                    <span className="bridge-arrow-icon left-pulse">⬅</span>
+                  ) : (
+                    <span className="bridge-arrow-icon idle-pulse">🤝</span>
+                  )}
+                </div>
+
+                <div className="trade-summary-pills">
+                  {tradeOfferedCards1.length > 0 && (
+                    <span className="summary-pill pill-send">
+                      {trader1?.name || 'P1'} gives {tradeOfferedCards1.length} deed(s)
+                    </span>
+                  )}
+                  {tradeOfferedCards2.length > 0 && (
+                    <span className="summary-pill pill-recv">
+                      {trader2?.name || 'P2'} gives {tradeOfferedCards2.length} deed(s)
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  className="execute-trade-btn"
+                  disabled={
+                    !trader1 ||
+                    !trader2 ||
+                    trader1.id === trader2.id ||
+                    (tradeOfferedCards1.length === 0 && tradeOfferedCards2.length === 0)
+                  }
+                  onClick={handleExecuteTrade}
+                >
+                  Execute Trade 🤝
+                </button>
+              </div>
+
+              {/* ================= TRADER 2 BOX ================= */}
+              <div className="trade-party-pod pod-right">
+                {/* Header or Placeholder */}
+                {trader2 ? (
+                  <div className="trade-pod-header">
+                    <div className="pod-header-user">
+                      <span className="pod-avatar">{trader2.token?.icon || '👤'}</span>
+                      <div>
+                        <h4 className="pod-player-name">{trader2.name}</h4>
+                        <span className="pod-card-counter">{trader2Cards.length} Properties</span>
+                      </div>
+                    </div>
+                    <select
+                      className="pod-change-select"
+                      value={tradePlayer2Id || ''}
+                      onChange={(e) => {
+                        setTradePlayer2Id(Number(e.target.value));
+                        setTradeOfferedCards2([]);
+                      }}
+                    >
+                      {gamePlayers.map((p) => (
+                        <option key={p.id} value={p.id} disabled={p.id === tradePlayer1Id}>
+                          {p.token?.icon} {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="trade-pod-placeholder">
+                    <div className="placeholder-icon">👤</div>
+                    <h4>Trader 2 Placeholder</h4>
+                    <p>Select second party for trade</p>
+                    <select
+                      className="placeholder-player-select"
+                      value=""
+                      onChange={(e) => {
+                        setTradePlayer2Id(Number(e.target.value));
+                        setTradeOfferedCards2([]);
+                      }}
+                    >
+                      <option value="" disabled>Select Trader 2...</option>
+                      {gamePlayers
+                        .filter((p) => p.id !== tradePlayer1Id)
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.token?.icon} {p.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Vertical Carousel of Trader 2's Cards */}
+                {trader2 && (
+                  <div className="trade-vertical-carousel">
+                    {trader2Cards.length === 0 ? (
+                      <div className="pod-empty-cards">
+                        <span>No deeds owned by {trader2.name}.</span>
+                      </div>
+                    ) : (
+                      trader2Cards.map((card) => {
+                        const isOffered = tradeOfferedCards2.includes(card._id);
+                        const bColor = normalizeCardColor(card.color, card.type);
+                        const own = ownership[card._id] || { erections: 0 };
+
+                        return (
+                          <div
+                            key={card._id}
+                            className={`vertical-trade-card ${isOffered ? 'card-offered' : ''}`}
+                            onClick={() => toggleTradeCard2(card._id)}
+                          >
+                            <div className="v-card-strip" style={{ backgroundColor: bColor }} />
+                            <div className="v-card-details">
+                              <span className="v-card-title">{card.name}</span>
+                              <span className="v-card-sub">
+                                Buy: ₹{card.buyingCost} • Base: ₹{card.baseRent || card.rent1 || 0}
+                                {own.erections > 0 && ` • (${own.erections}H)`}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              className={`v-offer-toggle-btn ${isOffered ? 'btn-active-offer' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleTradeCard2(card._id);
+                              }}
+                            >
+                              {isOffered ? '✓ Offered' : '+ Offer'}
+                            </button>
+                            {trader1 && (
+                              <button
+                                type="button"
+                                className="v-quick-transfer-btn"
+                                title={`Send directly to ${trader1.name}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleQuickSendToPlayer1(card._id);
+                                }}
+                              >
+                                ⬅ Send
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -831,12 +1203,19 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
         </div>
       )}
 
-      {/* ================= MODAL: LOANS ================= */}
+      {/* =========================================================================
+          MODAL: LOAN SYSTEM (₹500 LIMIT + 5% INTEREST REPAYMENT REQUIREMENT)
+          ========================================================================= */}
       {activeModal === 'loans' && (
         <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
-          <div className="game-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="game-modal-content modal-large" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Bank Loans</h3>
+              <div>
+                <h3>🏦 Bank Lending Desk</h3>
+                <p className="modal-subtitle-note">
+                  Max Loan Limit: <strong>₹500</strong>. When taken, limit is over until repaid with <strong>5% interest (₹525 total)</strong>.
+                </p>
+              </div>
               <button
                 type="button"
                 className="modal-close-btn"
@@ -845,27 +1224,64 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                 ✕
               </button>
             </div>
-            <p className="modal-description">
-              Borrow capital from the Bank against your mortgaged deeds.
-            </p>
-            <div className="loan-placeholder-panel">
-              <div className="loan-icon">🏦</div>
-              <h4>Bank Lending Desk</h4>
-              <p>Player: <strong>{activePlayer.name}</strong></p>
-              <p className="loan-note">
-                Loan interest rate: 10% on repayment.<br />
-                Mortgage properties to release 50% property value.
-              </p>
-              <button
-                type="button"
-                className="loan-action-btn"
-                onClick={() => {
-                  showToast('Loan desk feature will be connected in next phase!');
-                  setActiveModal(null);
-                }}
-              >
-                Request ₹500 Emergency Cash
-              </button>
+
+            {/* Loans Table for all players */}
+            <div className="loans-manager-list">
+              {gamePlayers.map((player) => {
+                const pLoan = loans[player.id];
+                const hasLoan = !!pLoan?.hasActiveLoan;
+
+                return (
+                  <div key={player.id} className={`loan-player-card ${hasLoan ? 'loan-locked' : 'loan-available'}`}>
+                    <div className="loan-player-header">
+                      <div className="loan-player-identity">
+                        <span className="loan-token">{player.token?.icon || '👤'}</span>
+                        <div>
+                          <h4 className="loan-name">{player.name}</h4>
+                          <span className={`loan-limit-tag ${hasLoan ? 'tag-limit-over' : 'tag-available'}`}>
+                            {hasLoan ? '⛔ Limit Over (Active Loan)' : '✅ ₹500 Limit Available'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Repayment or Loan Amount Info */}
+                      <div className="loan-financial-summary">
+                        {hasLoan ? (
+                          <div className="loan-due-breakdown">
+                            <span className="due-total">Due: ₹525</span>
+                            <span className="due-formula">(₹500 Principal + 5% Int ₹25)</span>
+                          </div>
+                        ) : (
+                          <div className="loan-available-box">
+                            <span className="avail-amount">Eligible for ₹500</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Loan Action Buttons */}
+                    <div className="loan-card-actions">
+                      {!hasLoan ? (
+                        <button
+                          type="button"
+                          className="loan-btn btn-grant-loan"
+                          onClick={() => handleGrantLoan(player.id)}
+                        >
+                          Grant ₹500 Loan 💰
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="loan-btn btn-repay-loan"
+                          onClick={() => handleRepayLoan(player.id)}
+                        >
+                          Repay Loan (₹525) 💳
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

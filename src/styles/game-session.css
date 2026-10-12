@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap');
 
 /* ==========================================================
-   ENHANCED MOBILE ZERO-SCROLL GAME SESSION + PLAYER PORTFOLIO
+   ENHANCED MOBILE ZERO-SCROLL GAME SESSION + TRADE + LOANS
    ========================================================== */
 
 * {
@@ -127,14 +127,20 @@ html, body {
   background: rgba(255, 255, 255, 0.18);
 }
 
+.nav-btn-trade {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+
+.nav-btn-trade:hover {
+  background: rgba(16, 185, 129, 0.28);
+  color: #ffffff;
+}
+
 .nav-btn-locked {
   color: #94a3b8;
   opacity: 0.8;
-}
-
-.nav-btn-locked:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #cbd5e1;
 }
 
 .nav-btn-end {
@@ -235,6 +241,7 @@ html, body {
   justify-content: space-between;
   min-height: 28px;
   z-index: 2;
+  gap: 0.3rem;
 }
 
 .card-token-icon {
@@ -260,6 +267,16 @@ html, body {
   border: 1px solid rgba(255, 215, 0, 0.4);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
   animation: pulseGold 2s infinite ease-in-out;
+}
+
+.card-loan-active-badge {
+  background: rgba(239, 68, 68, 0.85);
+  color: #ffffff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 100px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
 }
 
 @keyframes pulseGold {
@@ -324,7 +341,7 @@ html, body {
 
 /* ==========================================================
    VIEW B: DEDICATED PLAYER PORTFOLIO SCREEN
-   ========================================================== */
+   ========================================================= */
 
 .portfolio-screen-view {
   display: flex;
@@ -336,7 +353,6 @@ html, body {
   z-index: 10;
 }
 
-/* Portfolio Top Navbar */
 .portfolio-navbar {
   flex-shrink: 0;
   height: 52px;
@@ -401,7 +417,6 @@ html, body {
   color: #ffffff;
 }
 
-/* 0.9x Asset Value Tag in Navbar */
 .portfolio-asset-tag {
   display: inline-flex;
   flex-direction: column;
@@ -462,14 +477,7 @@ html, body {
   box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
 }
 
-.btn-add-card:hover {
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
-}
-
-/* ==========================================================
-   PORTFOLIO CAROUSEL STAGE & CARDS
-   ========================================================== */
-
+/* Deeds Carousel */
 .portfolio-carousel-stage {
   flex: 1;
   min-height: 0;
@@ -482,7 +490,6 @@ html, body {
   box-sizing: border-box;
 }
 
-/* Swipeable horizontal track */
 .deeds-carousel-track {
   display: flex;
   flex-direction: row;
@@ -499,16 +506,6 @@ html, body {
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-.deeds-carousel-track::-webkit-scrollbar {
-  height: 6px;
-}
-
-.deeds-carousel-track::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 10px;
-}
-
-/* Individual Deed Carousel Card */
 .deed-carousel-card {
   flex: 0 0 240px;
   width: 240px;
@@ -530,7 +527,6 @@ html, body {
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
 }
 
-/* Deed Color Banner */
 .deed-card-banner {
   padding: 0.85rem 0.75rem 0.75rem;
   color: #ffffff;
@@ -559,7 +555,6 @@ html, body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-/* Deed Body */
 .deed-card-body {
   flex: 1;
   padding: 0.85rem;
@@ -593,7 +588,6 @@ html, body {
   color: #0f172a;
 }
 
-/* Erection Section */
 .deed-erection-section {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -665,7 +659,6 @@ html, body {
   font-weight: 900;
 }
 
-/* Deed Asset Breakdown */
 .deed-asset-breakdown {
   display: flex;
   flex-direction: column;
@@ -685,7 +678,6 @@ html, body {
   font-weight: 600;
 }
 
-/* Deed Action Buttons */
 .deed-card-actions {
   display: flex;
   gap: 0.4rem;
@@ -724,7 +716,6 @@ html, body {
   color: #ffffff;
 }
 
-/* Empty Portfolio State */
 .portfolio-empty-state {
   text-align: center;
   padding: 2.5rem 1.5rem;
@@ -770,203 +761,534 @@ html, body {
   transition: all 0.15s ease;
 }
 
-.empty-state-add-btn:hover {
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
-  transform: translateY(-2px);
-}
-
 /* ==========================================================
-   TRADE MODAL & DROPDOWNS
+   TRADE DESK TWO-BOX MODAL & ANIMATIONS
    ========================================================== */
 
-.trade-select-group {
+.trade-desk-modal {
+  max-width: 900px !important;
+  width: 95% !important;
+  max-height: 92vh !important;
+  padding: 1rem 1.25rem !important;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 1rem;
 }
 
-.trade-select-group label {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #cbd5e1;
+.trade-modal-header {
+  margin-bottom: 0.75rem;
 }
 
-.trade-dropdown {
-  background: #0f172a;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+.trade-modal-title {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
   color: #ffffff;
-  padding: 0.7rem 0.9rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
+}
+
+.trade-modal-sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* Two Pods Grid */
+.trade-pods-grid {
+  display: grid;
+  grid-template-columns: 1fr 140px 1fr;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* Celebrating Swap animation overlay */
+.trade-swapping-glow {
+  animation: swapFlash 0.6s ease-in-out;
+}
+
+@keyframes swapFlash {
+  0% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.02); filter: brightness(1.6) drop-shadow(0 0 35px #f59e0b); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+/* Trade Pod (Each Party Box) */
+.trade-party-pod {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.pod-header-user {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pod-avatar {
+  font-size: 1.6rem;
+}
+
+.pod-player-name {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.pod-card-counter {
+  font-size: 0.7rem;
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.trade-pod-header {
+  padding: 0.75rem 0.9rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pod-change-select {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  font-size: 0.72rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
   outline: none;
 }
 
-.trade-actions-row {
+/* Placeholder Box state */
+.trade-pod-placeholder {
+  flex: 1;
   display: flex;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 18px;
+  text-align: center;
+  gap: 0.5rem;
 }
 
-.trade-actions-row button {
-  flex: 1;
-  padding: 0.75rem;
+.placeholder-icon {
+  font-size: 2.2rem;
+  opacity: 0.7;
+}
+
+.trade-pod-placeholder h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #ffffff;
+}
+
+.trade-pod-placeholder p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.placeholder-player-select {
+  background: #1e293b;
+  border: 1px solid #38bdf8;
+  color: #ffffff;
+  padding: 0.6rem 1rem;
   border-radius: 10px;
   font-weight: 700;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  outline: none;
+}
+
+/* Vertical Carousel of Cards */
+.trade-vertical-carousel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  scrollbar-width: thin;
+}
+
+.pod-empty-cards {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+/* Vertical Trade Card Item */
+.vertical-trade-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.6rem;
+  gap: 0.6rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.vertical-trade-card:hover {
+  background: rgba(255, 255, 255, 0.09);
+  transform: translateX(2px);
+}
+
+.vertical-trade-card.card-offered {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: #f59e0b;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+}
+
+.v-card-strip {
+  width: 8px;
+  height: 38px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.v-card-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.v-card-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+}
+
+.v-card-sub {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.v-offer-toggle-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.35rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.btn-active-offer {
+  background: #f59e0b;
+  color: #0f172a;
+  border-color: #f59e0b;
+}
+
+.v-quick-transfer-btn {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.v-quick-transfer-btn:hover {
+  background: #38bdf8;
+  color: #0f172a;
+}
+
+/* Central Exchange Bridge */
+.trade-center-bridge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.trade-direction-indicator {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.bridge-arrow-icon {
+  font-size: 1.6rem;
+  color: #f59e0b;
+}
+
+.mutual-pulse {
+  animation: pulseRotate 1.5s infinite ease-in-out;
+  color: #10b981;
+}
+
+@keyframes pulseRotate {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.trade-summary-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.summary-pill {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.25rem 0.45rem;
+  border-radius: 6px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.pill-send {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.pill-recv {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.execute-trade-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border: none;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: center;
+}
+
+.execute-trade-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.55);
+}
+
+.execute-trade-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Responsive Trade Pods on Mobile Screens */
+@media (max-width: 680px) {
+  .trade-pods-grid {
+    grid-template-columns: 1fr 100px 1fr;
+    gap: 6px;
+  }
+
+  .pod-player-name {
+    font-size: 0.88rem;
+  }
+
+  .v-card-title {
+    font-size: 0.74rem;
+  }
+
+  .execute-trade-btn {
+    font-size: 0.72rem;
+    padding: 0.5rem 0.4rem;
+  }
+}
+
+/* ==========================================================
+   LOAN SYSTEM MODAL (5% INTEREST + ₹500 MAX LIMIT)
+   ========================================================== */
+
+.modal-subtitle-note {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin: 0.2rem 0 0;
+}
+
+.loans-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  max-height: 60vh;
+  padding-right: 4px;
+}
+
+.loan-player-card {
+  border-radius: 16px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.loan-player-card.loan-available {
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.loan-player-card.loan-locked {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.loan-player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.loan-player-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.loan-token {
+  font-size: 1.8rem;
+}
+
+.loan-name {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.loan-limit-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+  display: inline-block;
+  margin-top: 0.2rem;
+}
+
+.tag-available {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+}
+
+.tag-limit-over {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.loan-due-breakdown {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+
+.due-total {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #f87171;
+}
+
+.due-formula {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.avail-amount {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.loan-card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.loan-btn {
+  padding: 0.6rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.85rem;
   cursor: pointer;
   border: none;
   transition: all 0.15s ease;
 }
 
-.btn-confirm-trade {
+.btn-grant-loan {
   background: linear-gradient(135deg, #10b981, #059669);
   color: #ffffff;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
 }
 
-.btn-confirm-trade:hover:not(:disabled) {
+.btn-grant-loan:hover {
   background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
 }
 
-.btn-confirm-trade:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.btn-repay-loan {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #0f172a;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
 }
 
-/* Clickable add card in modal */
-.card-clickable {
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.card-clickable:hover {
-  transform: translateY(-3px);
-  border-color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
-}
-
-.card-claim-chip {
-  margin: 0.4rem 0.5rem 0;
-  background: #2563eb;
-  border: none;
+.btn-repay-loan:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
   color: #ffffff;
-  padding: 0.35rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  cursor: pointer;
-  width: calc(100% - 1rem);
-}
-
-.card-owner-tag {
-  font-size: 0.65rem;
-  color: #38bdf8;
-  padding: 0.2rem 0.6rem;
-  font-weight: 600;
+  transform: translateY(-2px);
 }
 
 /* ==========================================================
-   RESPONSIVENESS (VERTICAL & HORIZONTAL)
+   OTHER MODALS (TOTAL DECK, REMAINING DECK, ETC)
    ========================================================== */
 
-@media (orientation: portrait) {
-  .portfolio-navbar {
-    height: 44px;
-    padding: 0 0.5rem;
-    gap: 0.4rem;
-  }
-
-  .portfolio-back-btn {
-    font-size: 0.74rem;
-    padding: 0.3rem 0.6rem;
-  }
-
-  .player-pill-name {
-    font-size: 0.85rem;
-  }
-
-  .asset-tag-value {
-    font-size: 0.95rem;
-  }
-
-  .portfolio-nav-action-btn {
-    font-size: 0.72rem;
-    padding: 0.35rem 0.6rem;
-  }
-
-  .deed-carousel-card {
-    flex: 0 0 215px;
-    width: 215px;
-    height: min(84%, 430px);
-  }
-}
-
-@media (orientation: landscape) and (max-height: 500px) {
-  .portfolio-navbar {
-    height: 40px;
-    margin: 4px 8px 0;
-  }
-
-  .portfolio-back-btn {
-    font-size: 0.74rem;
-    padding: 0.25rem 0.6rem;
-  }
-
-  .asset-tag-value {
-    font-size: 0.95rem;
-  }
-
-  .portfolio-nav-action-btn {
-    font-size: 0.72rem;
-    padding: 0.25rem 0.6rem;
-  }
-
-  .deed-carousel-card {
-    flex: 0 0 200px;
-    width: 200px;
-    height: min(90%, 300px);
-  }
-
-  .banner-card-name {
-    font-size: 0.9rem;
-  }
-
-  .rent-box-amount {
-    font-size: 1.15rem;
-  }
-}
-
-/* ======================== FLOATING TOAST ======================== */
-.floating-toast {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15, 23, 42, 0.94);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  padding: 0.6rem 1.3rem;
-  border-radius: 100px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(16px);
-  z-index: 100;
-  animation: slideToastUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  pointer-events: none;
-}
-
-@keyframes slideToastUp {
-  from { opacity: 0; transform: translate(-50%, 15px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-/* ======================== MODALS & POPUPS ======================== */
 .game-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.78);
   backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
@@ -1047,50 +1369,6 @@ html, body {
   color: #94a3b8;
 }
 
-.modal-players-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  overflow-y: auto;
-  max-height: 50vh;
-}
-
-.modal-player-choice {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.85rem 1rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-left-width: 6px;
-  border-radius: 14px;
-  color: #ffffff;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  font-size: 0.95rem;
-  font-weight: 600;
-  transition: all 0.15s ease;
-}
-
-.modal-player-choice:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateX(4px);
-}
-
-.modal-player-choice.current-active {
-  background: rgba(79, 172, 254, 0.14);
-  border-color: rgba(79, 172, 254, 0.4);
-}
-
-.active-badge {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.15);
-  padding: 0.2rem 0.55rem;
-  border-radius: 100px;
-}
-
 .modal-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -1130,6 +1408,7 @@ html, body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-transform: capitalize;
 }
 
 .card-cost {
@@ -1145,54 +1424,40 @@ html, body {
   padding: 0 0.6rem;
 }
 
+.card-owner-tag {
+  font-size: 0.65rem;
+  color: #38bdf8;
+  padding: 0.2rem 0.6rem;
+  font-weight: 600;
+}
+
+.card-claim-chip {
+  margin: 0.4rem 0.5rem 0;
+  background: #2563eb;
+  border: none;
+  color: #ffffff;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: calc(100% - 1rem);
+}
+
+.card-clickable {
+  cursor: pointer;
+}
+
+.card-clickable:hover {
+  transform: translateY(-2px);
+  border-color: #38bdf8;
+}
+
 .modal-empty-state {
   text-align: center;
   padding: 2rem 1rem;
   color: #94a3b8;
   font-size: 0.9rem;
-}
-
-.loan-placeholder-panel {
-  text-align: center;
-  padding: 1.5rem 1rem;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 16px;
-  border: 1px dashed rgba(255, 255, 255, 0.15);
-}
-
-.loan-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.loan-placeholder-panel h4 {
-  margin: 0 0 0.25rem;
-  font-size: 1.15rem;
-}
-
-.loan-note {
-  font-size: 0.78rem;
-  color: #94a3b8;
-  margin: 0.5rem 0 1.25rem;
-}
-
-.loan-action-btn {
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  color: #ffffff;
-  border: none;
-  font-weight: 700;
-  font-size: 0.85rem;
-  padding: 0.65rem 1.25rem;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
-}
-
-.loan-action-btn:hover {
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
 }
 
 .log-entries-list {
@@ -1252,4 +1517,28 @@ html, body {
 
 .btn-danger:hover {
   background: #dc2626;
+}
+
+.floating-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.94);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 0.6rem 1.3rem;
+  border-radius: 100px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(16px);
+  z-index: 100;
+  animation: slideToastUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+@keyframes slideToastUp {
+  from { opacity: 0; transform: translate(-50%, 15px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
