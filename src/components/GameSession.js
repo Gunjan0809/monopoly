@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import '../styles/game-session.css';
 
 // Color mapper to cleanly display database colors
@@ -139,10 +139,9 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   // Type 1: Banker Mystery Scratch / Flip
   const [type1PrizeInput, setType1PrizeInput] = useState('₹500 Cash Prize & 1 Free House');
   const [type1ActivePrize, setType1ActivePrize] = useState('₹500 Cash Prize & 1 Free House');
-  const [type1IsFlipped, setType1IsFlipped] = useState(false);
-  // Board-level sealed lottery box over player boxes (Fix 1)
-  const [isBoardLotteryVisible, setIsBoardLotteryVisible] = useState(true);
-  const [isBoardLotteryRevealed, setIsBoardLotteryRevealed] = useState(false);
+  // Big Sealed Lottery Overlay that overlaps player boxes on the game board
+  const [isBigLotteryOverlayActive, setIsBigLotteryOverlayActive] = useState(false);
+  const [isBigLotteryFlipped, setIsBigLotteryFlipped] = useState(false);
 
   // Type 2: 10-Card Memory Match Loop
   const [type2PlayerIndex, setType2PlayerIndex] = useState(0); // Loops through players
@@ -739,6 +738,32 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     showToast(`Fresh 10-card deck ready for ${gamePlayers[nextIdx].name}!`);
   };
 
+  // Big Sealed Lottery Overlay Handlers (Overlapping Player Boxes)
+  const lotteryVanishTimerRef = useRef(null);
+
+  const handleRevealBigLottery = () => {
+    if (isBigLotteryFlipped) return;
+    setIsBigLotteryFlipped(true);
+    setGameLogs((prev) => [
+      `🎰 LOTTERY REVEALED: Physical draw winner tapped and revealed "${type1ActivePrize}"!`,
+      ...prev,
+    ]);
+    showToast(`🎉 Prize Revealed: ${type1ActivePrize}`);
+
+    // Automatically vanish card and return to normal game page after 3.2s
+    if (lotteryVanishTimerRef.current) clearTimeout(lotteryVanishTimerRef.current);
+    lotteryVanishTimerRef.current = setTimeout(() => {
+      setIsBigLotteryOverlayActive(false);
+      setIsBigLotteryFlipped(false);
+    }, 3200);
+  };
+
+  const handleDismissBigLottery = () => {
+    if (lotteryVanishTimerRef.current) clearTimeout(lotteryVanishTimerRef.current);
+    setIsBigLotteryOverlayActive(false);
+    setIsBigLotteryFlipped(false);
+  };
+
   // Helper arrays
   const remainingCards = allCards.filter((card) => !ownership[card._id]);
   const portfolioPlayer = gamePlayers.find((p) => p.id === viewingPortfolioPlayerId);
@@ -863,74 +888,57 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
             </div>
           </nav>
 
-          {/* SEALED LOTTERY PRIZE OVER PLAYER BOXES (Fix 1) */}
-          {isBoardLotteryVisible && (
-            <div className="board-lottery-anchor">
+          {/* MAIN PLAYER BOXES CONTAINER (Tap opens Portfolio!) */}
+          <main className="player-boxes-stage" style={{ '--player-count': gamePlayers.length }}>
+            {/* BIG SEALED LOTTERY CARD OVERLAPPING PLAYER BOXES (Fix 1) */}
+            {isBigLotteryOverlayActive && (
               <div
-                className={`board-sealed-lottery-card ${isBoardLotteryRevealed ? 'is-revealed' : ''}`}
+                className="big-lottery-stage-overlay"
                 onClick={() => {
-                  if (!isBoardLotteryRevealed) {
-                    setIsBoardLotteryRevealed(true);
-                    showToast(`🎉 Prize Revealed: ${type1ActivePrize}`);
-                  }
+                  if (isBigLotteryFlipped) handleDismissBigLottery();
                 }}
               >
-                <div className="board-lottery-flipper">
-                  {/* Front: Sealed State */}
-                  <div className="b-face b-face-front">
-                    <div className="b-left-block">
-                      <span className="b-dice-icon">🎲</span>
-                      <div className="b-info-block">
-                        <span className="b-status-pill">OFFICIAL LOTTERY SEALED 🔒</span>
-                        <span className="b-action-title">Tap to Reveal Winner&rsquo;s Prize</span>
-                      </div>
-                    </div>
-                    <div className="b-tap-prompt">
-                      <span>TAP TO REVEAL 🎁</span>
-                    </div>
+                <div
+                  className={`big-lottery-flip-card ${isBigLotteryFlipped ? 'is-flipped' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isBigLotteryFlipped) {
+                      handleRevealBigLottery();
+                    } else {
+                      handleDismissBigLottery();
+                    }
+                  }}
+                >
+                  {/* Front: Big Sealed Mystery Card Overlapping Player Boxes */}
+                  <div className="big-flip-face big-flip-front">
+                    <div className="big-seal-ribbon">OFFICIAL BANK LOTTERY</div>
+                    <div className="big-seal-dice">🎲</div>
+                    <h2 className="big-seal-title">TAP TO REVEAL LOTTERY</h2>
+                    <div className="big-seal-badge">PHYSICAL DRAW WINNER TAP HERE 🎁</div>
+                    <p className="big-seal-hint">Tap anywhere on this card to reveal the sealed prize!</p>
                   </div>
 
-                  {/* Back: Revealed State */}
-                  <div className="b-face b-face-back">
-                    <div className="b-left-block">
-                      <span className="b-trophy-icon">🏆</span>
-                      <div className="b-info-block">
-                        <span className="b-congrats-pill">CONGRATULATIONS! 🎉</span>
-                        <strong className="b-prize-val">{type1ActivePrize}</strong>
-                      </div>
-                    </div>
-                    <div className="b-back-actions">
-                      <button
-                        type="button"
-                        className="b-btn b-btn-reseal"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsBoardLotteryRevealed(false);
-                          showToast('Prize Resealed inside Card!');
-                        }}
-                      >
-                        🔄 Reseal
-                      </button>
-                      <button
-                        type="button"
-                        className="b-btn b-btn-close"
-                        title="Dismiss Lottery Banner"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsBoardLotteryVisible(false);
-                        }}
-                      >
-                        ✕
-                      </button>
-                    </div>
+                  {/* Back: Revealed Prize */}
+                  <div className="big-flip-face big-flip-back">
+                    <div className="big-trophy-icon">🏆</div>
+                    <span className="big-congrats-sub">CONGRATULATIONS! 🎉</span>
+                    <h1 className="big-prize-heading">{type1ActivePrize}</h1>
+                    <p className="big-auto-dismiss-note">Card vanishes in a moment • Tap to return to game</p>
+                    <button
+                      type="button"
+                      className="btn-continue-to-game"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDismissBigLottery();
+                      }}
+                    >
+                      Return to Game ➔
+                    </button>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* MAIN PLAYER BOXES CONTAINER (Tap opens Portfolio!) */}
-          <main className="player-boxes-stage" style={{ '--player-count': gamePlayers.length }}>
             <div className="cards-deck-container">
               {gamePlayers.map((player, index) => {
                 const theme = PLAYER_THEMES[index % PLAYER_THEMES.length];
@@ -1757,68 +1765,101 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
               </button>
             </div>
 
-            {/* LOTTERY TYPE 1: BANKER MYSTERY PRIZE CARD */}
+            {/* LOTTERY TYPE 1: BANKER MYSTERY PRIZE SPECIFICATION */}
             {lotteryTab === 'type1' && (
               <div className="lottery-type1-container">
                 <div className="type1-banker-controls">
-                  <label>Banker Custom Prize Specification:</label>
+                  <label>Enter Prize to Seal Inside the Card:</label>
                   <div className="type1-input-row">
                     <input
                       type="text"
                       className="type1-prize-input"
                       value={type1PrizeInput}
                       onChange={(e) => setType1PrizeInput(e.target.value)}
-                      placeholder="e.g. ₹500 Cash, Free House, Electric Company..."
+                      placeholder="e.g. ₹500 Cash, 1 Free House, Any Free Deed..."
                     />
-                    <button
-                      type="button"
-                      className="type1-set-btn"
-                      onClick={() => {
-                        setType1ActivePrize(type1PrizeInput || 'Surprise Prize!');
-                        setType1IsFlipped(false);
-                        showToast('Mystery Prize Sealed inside Card!');
-                      }}
-                    >
-                      Seal in Card 🔒
-                    </button>
                   </div>
-                </div>
 
-                {/* The Big 3D Mystery Card */}
-                <div className="type1-card-stage">
-                  <div
-                    className={`lottery-flip-card ${type1IsFlipped ? 'is-flipped' : ''}`}
+                  {/* Quick Prize Suggestion Chips */}
+                  <div className="lottery-presets-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', margin: '6px 0' }}>
+                    {[
+                      '₹500 Cash Prize',
+                      '₹1,000 Jackpot',
+                      '1 Free House 🏠',
+                      '2 Free Houses 🏠🏠',
+                      'Pick Any Free Deed 📜',
+                      'Get Out of Jail Free 🗝️',
+                    ].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        className="preset-chip"
+                        style={{
+                          background: type1PrizeInput === preset ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                          border: type1PrizeInput === preset ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.15)',
+                          color: type1PrizeInput === preset ? '#fbbf24' : '#e2e8f0',
+                          borderRadius: '100px',
+                          padding: '3px 10px',
+                          fontSize: '0.72rem',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => setType1PrizeInput(preset)}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Main Seal Button that launches overlay on main board */}
+                  <button
+                    type="button"
+                    className="type1-seal-launch-btn"
+                    style={{
+                      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                      border: 'none',
+                      color: '#000000',
+                      fontFamily: "'Outfit', sans-serif",
+                      fontWeight: '800',
+                      fontSize: '0.92rem',
+                      padding: '0.65rem 1.2rem',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      marginTop: '6px',
+                      boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      width: '100%',
+                    }}
                     onClick={() => {
-                      if (!type1IsFlipped) {
-                        setType1IsFlipped(true);
-                        showToast(`Prize Revealed: ${type1ActivePrize}`);
-                      }
+                      const prize = (type1PrizeInput || '').trim() || '₹500 Cash Prize';
+                      setType1ActivePrize(prize);
+                      setActiveModal(null); // Closes modal
+                      setViewingPortfolioPlayerId(null); // Lands directly on main game page where players cards are
+                      setIsBigLotteryFlipped(false);
+                      setIsBigLotteryOverlayActive(true); // Big card overlaps players cards
+                      showToast(`Lottery Sealed: "${prize}". Tap on board to reveal!`);
                     }}
                   >
-                    {/* Front Face: Mystery Closed */}
-                    <div className="flip-face flip-front">
-                      <div className="mystery-pattern">🎲</div>
-                      <span className="mystery-title">OFFICIAL MONOPOLY LOTTERY</span>
-                      <div className="mystery-badge">TAP TO REVEAL PRIZE</div>
-                      <p className="mystery-hint">Physical draw winner taps here to unlock!</p>
-                    </div>
+                    <span>🔒</span>
+                    <span>SEAL LOTTERY & LAUNCH TO GAME BOARD</span>
+                  </button>
 
-                    {/* Back Face: Revealed Prize */}
-                    <div className="flip-face flip-back">
-                      <span className="prize-trophy">🏆</span>
-                      <span className="prize-congrats">CONGRATULATIONS!</span>
-                      <h2 className="prize-text">{type1ActivePrize}</h2>
-                      <button
-                        type="button"
-                        className="prize-reset-chip"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setType1IsFlipped(false);
-                        }}
-                      >
-                        🔄 Seal Again for Next Winner
-                      </button>
-                    </div>
+                  <div
+                    style={{
+                      marginTop: '8px',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      background: 'rgba(30, 41, 59, 0.5)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      fontSize: '0.7rem',
+                      color: '#94a3b8',
+                      lineHeight: '1.4',
+                    }}
+                  >
+                    💡 <strong>Workflow:</strong> Tapping <em>Seal Lottery</em> returns to the main game board where all player cards are. A giant sealed card will overlap the players&apos; cards saying <strong>&quot;TAP TO REVEAL LOTTERY&quot;</strong>. The physical draw winner taps it to reveal the prize, after which the card vanishes and the normal game resumes!
                   </div>
                 </div>
               </div>

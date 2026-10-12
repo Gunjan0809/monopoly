@@ -164,6 +164,7 @@ html, body {
   overflow: hidden;
   box-sizing: border-box;
   z-index: 10;
+  position: relative;
 }
 
 .cards-deck-container {
@@ -3059,158 +3060,232 @@ html, body {
 }
 
 /* ==========================================================
-   FIX 1: SEALED LOTTERY CARD OVER MAIN PLAYER BOXES
+   FIX 1: BIG SEALED LOTTERY CARD OVERLAPPING PLAYER BOXES
    ========================================================== */
-.board-lottery-anchor {
-  flex-shrink: 0;
-  width: 100%;
-  padding: 4px 16px 0;
-  z-index: 15;
-  display: flex;
-  justify-content: center;
-}
-
-.board-sealed-lottery-card {
-  width: 100%;
-  max-width: 680px;
-  height: 52px;
-  perspective: 1000px;
-  cursor: pointer;
-  user-select: none;
-}
-
-.board-lottery-flipper {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  transition: transform 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.board-sealed-lottery-card.is-revealed .board-lottery-flipper {
-  transform: rotateX(180deg);
-}
-
-.b-face {
+.big-lottery-stage-overlay {
   position: absolute;
   inset: 0;
-  border-radius: 14px;
+  width: 100%;
+  height: 100%;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(8, 11, 17, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: fadeInBigLotteryOverlay 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInBigLotteryOverlay {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.big-lottery-flip-card {
+  width: min(92vw, 450px);
+  height: min(65vh, 320px);
+  perspective: 1200px;
+  cursor: pointer;
+  user-select: none;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.big-lottery-flip-card.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.big-flip-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.4rem 1rem;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
-}
-
-/* Front Face: Sealed Box */
-.b-face-front {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
-  border: 1.5px solid rgba(245, 158, 11, 0.6);
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.25), inset 0 0 10px rgba(245, 158, 11, 0.15);
-}
-
-.b-left-block {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.b-dice-icon {
-  font-size: 1.6rem;
-  animation: pulseMystery 1.8s infinite ease-in-out;
-}
-
-.b-info-block {
-  display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(245, 158, 11, 0.3);
+  overflow: hidden;
 }
 
-.b-status-pill {
-  font-size: 0.62rem;
-  font-weight: 800;
-  color: #fbbf24;
-  letter-spacing: 0.8px;
+/* Front Face: Sealed Mystery Card */
+.big-flip-front {
+  background: radial-gradient(circle at 50% 20%, #2e2612 0%, #17150f 50%, #0c0b08 100%);
+  border: 2.5px solid #f59e0b;
+  box-shadow: 
+    0 25px 60px rgba(0, 0, 0, 0.85),
+    0 0 45px rgba(245, 158, 11, 0.35),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5),
+    inset 0 0 25px rgba(245, 158, 11, 0.2);
+  gap: 0.65rem;
+  animation: pulseCardGlow 2.4s infinite ease-in-out;
 }
 
-.b-action-title {
-  font-family: 'Outfit', sans-serif;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #ffffff;
+@keyframes pulseCardGlow {
+  0%, 100% {
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(245, 158, 11, 0.3), inset 0 0 20px rgba(245, 158, 11, 0.15);
+  }
+  50% {
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 60px rgba(245, 158, 11, 0.6), inset 0 0 35px rgba(245, 158, 11, 0.3);
+  }
 }
 
-.b-tap-prompt {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: #000000;
+.big-seal-ribbon {
   font-family: 'Outfit', sans-serif;
   font-size: 0.72rem;
   font-weight: 800;
-  padding: 0.35rem 0.8rem;
+  letter-spacing: 2px;
+  color: #fbbf24;
+  text-transform: uppercase;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 0.3rem 0.9rem;
   border-radius: 100px;
-  box-shadow: 0 3px 12px rgba(245, 158, 11, 0.45);
-  animation: pulseGold 2s infinite ease-in-out;
+}
+
+.big-seal-dice {
+  font-size: 3.2rem;
+  line-height: 1;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
+  animation: bounceDice 2s infinite ease-in-out;
+}
+
+@keyframes bounceDice {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(8deg);
+  }
+}
+
+.big-seal-title {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.55rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+.big-seal-badge {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #000000;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.45rem 1.1rem;
+  border-radius: 100px;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.5);
+  animation: pulseGoldBadge 1.8s infinite ease-in-out;
+}
+
+@keyframes pulseGoldBadge {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.big-seal-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #d1d5db;
+  opacity: 0.85;
 }
 
 /* Back Face: Revealed Prize */
-.b-face-back {
-  background: radial-gradient(circle at 50% 50%, #312e81 0%, #1e1b4b 60%, #0f172a 100%);
-  border: 1.5px solid #a855f7;
-  box-shadow: 0 0 25px rgba(168, 85, 247, 0.4);
-  transform: rotateX(180deg);
+.big-flip-back {
+  background: radial-gradient(circle at 50% 25%, #2e1065 0%, #1e1b4b 55%, #0f172a 100%);
+  border: 2.5px solid #a855f7;
+  box-shadow: 
+    0 25px 60px rgba(0, 0, 0, 0.85),
+    0 0 50px rgba(168, 85, 247, 0.45),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5),
+    inset 0 0 25px rgba(168, 85, 247, 0.25);
+  transform: rotateY(180deg);
+  gap: 0.5rem;
 }
 
-.b-trophy-icon {
-  font-size: 1.6rem;
+.big-trophy-icon {
+  font-size: 3rem;
+  line-height: 1;
+  filter: drop-shadow(0 6px 15px rgba(245, 158, 11, 0.5));
+  animation: trophyCelebrate 1.2s ease-out;
 }
 
-.b-congrats-pill {
-  font-size: 0.6rem;
+@keyframes trophyCelebrate {
+  0% {
+    transform: scale(0.4) rotate(-15deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2) rotate(8deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+.big-congrats-sub {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
   font-weight: 800;
   color: #c084fc;
-  letter-spacing: 0.8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
 }
 
-.b-prize-val {
+.big-prize-heading {
+  margin: 0;
   font-family: 'Outfit', sans-serif;
-  font-size: 1.05rem;
+  font-size: 1.5rem;
   font-weight: 900;
   color: #fde047;
-  text-shadow: 0 0 12px rgba(253, 224, 71, 0.5);
+  text-shadow: 0 0 20px rgba(253, 224, 71, 0.6);
+  max-width: 90%;
+  word-break: break-word;
 }
 
-.b-back-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+.big-auto-dismiss-note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #94a3b8;
 }
 
-.b-btn {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.btn-continue-to-game {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: #ffffff;
-  border-radius: 8px;
-  padding: 0.25rem 0.55rem;
-  font-size: 0.68rem;
-  font-weight: 700;
+  border: none;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.45rem 1.2rem;
+  border-radius: 100px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  transition: all 0.2s ease;
+  margin-top: 0.2rem;
 }
 
-.b-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.b-btn-close {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
+.btn-continue-to-game:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
 }
 
 /* ==========================================================
@@ -3541,44 +3616,53 @@ html, body {
    LANDSCAPE MOBILE OVERRIDES FOR BOARD LOTTERY & SELL MODAL
    ========================================================== */
 @media screen and (orientation: landscape), screen and (max-height: 520px) {
-  .board-lottery-anchor {
-    padding: 2px 10px 0 !important;
+  .big-lottery-stage-overlay {
+    padding: 0.5rem !important;
   }
 
-  .board-sealed-lottery-card {
-    height: 40px !important;
-    max-width: 580px !important;
+  .big-lottery-flip-card {
+    width: min(78vw, 480px) !important;
+    height: min(78vh, 260px) !important;
   }
 
-  .b-face {
-    padding: 0.25rem 0.75rem !important;
-    border-radius: 10px !important;
+  .big-flip-face {
+    padding: 0.8rem 1.4rem !important;
+    border-radius: 18px !important;
   }
 
-  .b-dice-icon, .b-trophy-icon {
+  .big-seal-ribbon {
+    font-size: 0.65rem !important;
+    padding: 0.2rem 0.6rem !important;
+  }
+
+  .big-seal-dice, .big-trophy-icon {
+    font-size: 2.2rem !important;
+  }
+
+  .big-seal-title {
     font-size: 1.2rem !important;
   }
 
-  .b-status-pill, .b-congrats-pill {
-    font-size: 0.55rem !important;
-  }
-
-  .b-action-title {
+  .big-seal-badge {
     font-size: 0.75rem !important;
+    padding: 0.3rem 0.8rem !important;
   }
 
-  .b-tap-prompt {
-    font-size: 0.62rem !important;
-    padding: 0.2rem 0.55rem !important;
+  .big-seal-hint, .big-auto-dismiss-note {
+    font-size: 0.68rem !important;
   }
 
-  .b-prize-val {
-    font-size: 0.92rem !important;
+  .big-congrats-sub {
+    font-size: 0.72rem !important;
   }
 
-  .b-btn {
-    padding: 0.2rem 0.45rem !important;
-    font-size: 0.62rem !important;
+  .big-prize-heading {
+    font-size: 1.25rem !important;
+  }
+
+  .btn-continue-to-game {
+    font-size: 0.75rem !important;
+    padding: 0.35rem 0.9rem !important;
   }
 
   .portfolio-sell-modal {
