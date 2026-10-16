@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const PropertySchema = new mongoose.Schema({
-  type: { type: String, enum: ['property', 'station'], default: 'property' },
+  type: { type: String, enum: ['property', 'station', 'utility'], default: 'property' },
   name: { type: String, required: true },
   buyingCost: { type: Number, required: true },
   buildingCost: { type: Number, default: 0 },
@@ -13,6 +13,7 @@ const PropertySchema = new mongoose.Schema({
   hotelRent: { type: Number, default: 0 },
   mortgage: { type: Number, required: true },
   color: { type: String, default: '#ffffff' },
+  icon: { type: String, default: '' },
 }, { timestamps: true });
 
 export default mongoose.models.Property || mongoose.model('Property', PropertySchema);

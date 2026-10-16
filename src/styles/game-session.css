@@ -507,25 +507,62 @@ html, body {
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-.deed-carousel-card {
-  flex: 0 0 240px;
-  width: 240px;
-  height: min(86%, 420px);
+.deed-carousel-card-container {
+  flex: 0 0 250px;
+  width: 250px;
+  height: min(88%, 435px);
   scroll-snap-align: center;
-  background: #f8fafc;
-  color: #0f172a;
+  perspective: 1200px;
+  border-radius: 18px;
+  transition: transform 0.25s ease;
+}
+
+.deed-carousel-card-container:hover {
+  transform: translateY(-4px);
+}
+
+.deed-card-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  transition: transform 0.65s cubic-bezier(0.34, 1.25, 0.64, 1);
+  transform-style: preserve-3d;
+}
+
+/* Vertical Flip Down when Mortgaged */
+.deed-carousel-card-container.is-mortgaged .deed-card-flip-inner {
+  transform: rotateX(180deg);
+}
+
+.deed-card-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   border-radius: 18px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.deed-carousel-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
+.deed-card-front {
+  background: #f8fafc;
+  color: #0f172a;
+  transform: rotateX(0deg);
+}
+
+.deed-carousel-card {
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .deed-card-banner {
@@ -715,6 +752,176 @@ html, body {
 .btn-takeback:hover {
   background: #dc2626;
   color: #ffffff;
+}
+
+/* Mortgage Action Button */
+.btn-mortgage-action {
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.btn-mortgage-action:hover:not(.btn-mortgage-locked) {
+  background: #f59e0b;
+  color: #ffffff;
+  border-color: #d97706;
+}
+
+.btn-mortgage-action.btn-mortgage-locked {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #64748b;
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.btn-mortgage-action.btn-mortgage-locked:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+/* =========================================================================
+   MORTGAGED FLIPPED-DOWN BACK FACE STYLES
+   ========================================================================= */
+.deed-card-back.mortgaged-card-back {
+  background: linear-gradient(175deg, #181824 0%, #111422 55%, #0b0d18 100%);
+  color: #f8fafc;
+  transform: rotateX(180deg);
+  border: 2px solid #ef4444;
+  box-shadow: 0 20px 50px rgba(239, 68, 68, 0.25), 0 16px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mortgaged-banner {
+  filter: saturate(0.8) brightness(0.9);
+  position: relative;
+  box-shadow: inset 0 -3px 6px rgba(0, 0, 0, 0.4);
+}
+
+.mortgaged-banner::after {
+  content: 'MORTGAGED';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  background: rgba(220, 38, 38, 0.9);
+  color: #ffffff;
+  padding: 3px 6px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.mortgaged-card-body {
+  flex: 1;
+  padding: 0.85rem;
+  background: transparent !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.mortgaged-stamp-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1.5px dashed rgba(239, 68, 68, 0.65);
+  border-radius: 12px;
+  box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.1);
+}
+
+.mortgaged-stamp-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.mortgaged-stamp-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.mortgaged-stamp-main {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #f87171;
+  text-transform: uppercase;
+}
+
+.mortgaged-stamp-sub {
+  font-size: 0.68rem;
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.mortgaged-details-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.mortgaged-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.mortgaged-stat-row .payout-val {
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #34d399;
+}
+
+.mortgaged-stat-row .rent-zero-val {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #f87171;
+}
+
+.mortgaged-rules-box {
+  margin-top: 0.15rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.6rem;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.mortgaged-rules-box p {
+  margin: 0.1rem 0;
+}
+
+.btn-unmortgage-action {
+  width: 100%;
+  padding: 0.6rem;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-unmortgage-action:hover {
+  background: linear-gradient(135deg, #047857, #059669);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.55);
 }
 
 .portfolio-empty-state {

@@ -249,9 +249,11 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     allCards.forEach((card) => {
       const own = ownership[card._id];
       if (own && own.ownerId === playerId) {
-        const landValue = Number(card.buyingCost) || 0;
         const erectionCount = Number(own.erections) || 0;
         const erectionCost = Number(card.buildingCost) || 0;
+        const mortgageVal = Number(card.mortgage) || Math.round((Number(card.buyingCost) || 0) / 2);
+        // If mortgaged, the equity value is the mortgage amount
+        const landValue = own.isMortgaged ? mortgageVal : (Number(card.buyingCost) || 0);
         rawTotal += landValue + (erectionCount * erectionCost);
       }
     });
@@ -260,6 +262,12 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
 
   // Calculate rent for a card given its erection level from DB fields
   const getCardCurrentRent = (card, erections = 0) => {
+    // If mortgaged, no rent can be collected!
+    const own = ownership[card._id];
+    if (own?.isMortgaged) {
+      return 0;
+    }
+
     if (card.type === 'station') {
       const base = Number(card.rent1) || Number(card.baseRent) || 25;
       return base * Math.max(1, erections);
@@ -281,7 +289,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   const handleAddCardToPlayer = (cardId, playerId) => {
     setOwnership((prev) => ({
       ...prev,
-      [cardId]: { ownerId: playerId, erections: 0 },
+      [cardId]: { ownerId: playerId, erections: 0, isMortgaged: false },
     }));
     const card = allCards.find((c) => c._id === cardId);
     const player = gamePlayers.find((p) => p.id === playerId);
@@ -455,6 +463,65 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     }));
     const label = nextVal === 5 ? 'Hotel' : `${nextVal} houses`;
     showToast(`Updated to ${label}`);
+  };
+
+  // ================= MORTGAGE SYSTEM LOGIC =================
+  // Rule: Can ONLY be mortgaged if ALL erected buildings (houses/hotel) are removed first.
+  const handleMortgageCard = (cardId) => {
+    const card = allCards.find((c) => c._id === cardId);
+    const own = ownership[cardId];
+    if (!card || !own) return;
+
+    const erections = Number(own.erections) || 0;
+    if (erections > 0) {
+      showToast(`⚠️ Cannot mortgage ${card.name}: Remove all ${erections === 5 ? 'hotels' : 'houses'} erected on it first!`);
+      return;
+    }
+
+    if (own.isMortgaged) {
+      showToast(`${card.name} is already mortgaged!`);
+      return;
+    }
+
+    const player = gamePlayers.find((p) => p.id === own.ownerId);
+    const mortgageVal = Number(card.mortgage) || Math.round((Number(card.buyingCost) || 0) / 2);
+
+    setOwnership((prev) => ({
+      ...prev,
+      [cardId]: {
+        ...prev[cardId],
+        isMortgaged: true,
+      },
+    }));
+
+    setGameLogs((prev) => [
+      `🏦 ${player?.name || 'Player'} mortgaged ${card.name} to the Bank for ₹${mortgageVal}. (Card turned face down)`,
+      ...prev,
+    ]);
+    showToast(`🏦 ${card.name} is now mortgaged! Bank pays ₹${mortgageVal}.`);
+  };
+
+  const handleUnmortgageCard = (cardId) => {
+    const card = allCards.find((c) => c._id === cardId);
+    const own = ownership[cardId];
+    if (!card || !own) return;
+
+    const player = gamePlayers.find((p) => p.id === own.ownerId);
+    const mortgageVal = Number(card.mortgage) || Math.round((Number(card.buyingCost) || 0) / 2);
+
+    setOwnership((prev) => ({
+      ...prev,
+      [cardId]: {
+        ...prev[cardId],
+        isMortgaged: false,
+      },
+    }));
+
+    setGameLogs((prev) => [
+      `🔓 ${player?.name || 'Player'} lifted mortgage on ${card.name} (Repaid ₹${mortgageVal} to Bank). Card turned face up.`,
+      ...prev,
+    ]);
+    showToast(`🔓 Mortgage lifted on ${card.name}! Rent and actions restored.`);
   };
 
   // ================= LOAN SYSTEM LOGIC =================
@@ -1090,120 +1157,196 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
             ) : (
               <div className="deeds-carousel-track">
                 {portfolioCards.map((card) => {
-                  const cardOwn = ownership[card._id] || { erections: 0 };
+                  const cardOwn = ownership[card._id] || { erections: 0, isMortgaged: false };
+                  const isMortgaged = !!cardOwn.isMortgaged;
                   const erections = cardOwn.erections || 0;
                   const currentRent = getCardCurrentRent(card, erections);
                   const canErect = card.type === 'property' && (Number(card.buildingCost) || 0) > 0;
                   const erectionCost = Number(card.buildingCost) || 0;
-                  const grossVal = (Number(card.buyingCost) || 0) + (erections * erectionCost);
+                  const mortgageVal = Number(card.mortgage) || Math.round((Number(card.buyingCost) || 0) / 2);
+                  const grossVal = isMortgaged
+                    ? mortgageVal
+                    : (Number(card.buyingCost) || 0) + (erections * erectionCost);
                   const liquidationPayout = Math.round(0.9 * grossVal);
                   const bannerColor = normalizeCardColor(card.color, card.type);
 
                   return (
-                    <div key={card._id} className="deed-carousel-card">
-                      {/* Top Color Banner */}
-                      <div
-                        className="deed-card-banner"
-                        style={{ backgroundColor: bannerColor }}
-                      >
-                        <span className="banner-type-tag">
-                          {card.type === 'station' ? '🚂 RAILWAY STATION' : card.type === 'utility' ? '⚡ UTILITY' : 'TITLE DEED'}
-                        </span>
-                        <h3 className="banner-card-name">{card.name}</h3>
-                      </div>
+                    <div
+                      key={card._id}
+                      className={`deed-carousel-card-container ${isMortgaged ? 'is-mortgaged' : ''}`}
+                    >
+                      <div className="deed-card-flip-inner">
+                        {/* ================= FRONT SIDE (ACTIVE DEED) ================= */}
+                        <div className="deed-carousel-card deed-card-face deed-card-front">
+                          {/* Top Color Banner */}
+                          <div
+                            className="deed-card-banner"
+                            style={{ backgroundColor: bannerColor }}
+                          >
+                            <span className="banner-type-tag">
+                              {card.type === 'station' ? '🚂 RAILWAY STATION' : card.type === 'utility' ? '⚡ UTILITY' : 'TITLE DEED'}
+                            </span>
+                            <h3 className="banner-card-name">{card.name}</h3>
+                          </div>
 
-                      {/* Card Content Body */}
-                      <div className="deed-card-body">
-                        {/* Current Rent Highlight */}
-                        <div className="deed-rent-box">
-                          <span className="rent-box-label">CURRENT RENT</span>
-                          <span className="rent-box-amount">₹{currentRent}</span>
-                        </div>
-
-                        {/* Erection Stepper (Houses / Hotel) */}
-                        {canErect && (
-                          <div className="deed-erection-section">
-                            <div className="erection-title-row">
-                              <span className="erection-label">Houses / Hotel:</span>
-                              <span className="erection-cost-hint">₹{erectionCost}/house</span>
+                          {/* Card Content Body */}
+                          <div className="deed-card-body">
+                            {/* Current Rent Highlight */}
+                            <div className="deed-rent-box">
+                              <span className="rent-box-label">CURRENT RENT</span>
+                              <span className="rent-box-amount">₹{currentRent}</span>
                             </div>
 
-                            <div className="erection-stepper">
+                            {/* Erection Stepper (Houses / Hotel) */}
+                            {canErect && (
+                              <div className="deed-erection-section">
+                                <div className="erection-title-row">
+                                  <span className="erection-label">Houses / Hotel:</span>
+                                  <span className="erection-cost-hint">₹{erectionCost}/house</span>
+                                </div>
+
+                                <div className="erection-stepper">
+                                  <button
+                                    type="button"
+                                    className="stepper-btn"
+                                    onClick={() => handleUpdateErections(card._id, -1)}
+                                    disabled={erections <= 0}
+                                  >
+                                    –
+                                  </button>
+
+                                  <div className="stepper-indicator">
+                                    {erections === 0 && <span className="erection-zero">Plot Only</span>}
+                                    {erections > 0 && erections < 5 && (
+                                      <span className="erection-houses">
+                                        {'🏠'.repeat(erections)} ({erections}H)
+                                      </span>
+                                    )}
+                                    {erections === 5 && (
+                                      <span className="erection-hotel">🏨 Hotel</span>
+                                    )}
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    className="stepper-btn"
+                                    onClick={() => handleUpdateErections(card._id, 1)}
+                                    disabled={erections >= 5}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 100% Actual Asset Breakdown + 0.9x Sell Value Indicator */}
+                            <div className="deed-asset-breakdown">
+                              <span className="actual-val-line">
+                                Actual Asset: <strong>₹{grossVal}</strong>
+                              </span>
+                              <span className="liquidation-val-line">
+                                Liquidation Payout (0.9x): <strong>₹{liquidationPayout}</strong>
+                              </span>
+                            </div>
+
+                            {/* Action Buttons: SELL | TRADE | MORTGAGE | TAKE BACK */}
+                            <div className="deed-card-actions">
                               <button
                                 type="button"
-                                className="stepper-btn"
-                                onClick={() => handleUpdateErections(card._id, -1)}
-                                disabled={erections <= 0}
+                                className="deed-action-btn btn-sell-action"
+                                onClick={() => handleOpenPortfolioSellModal(card._id)}
+                                title="Liquidate cards and houses to Bank at 0.9x value"
                               >
-                                –
+                                💰 Sell (0.9x)
                               </button>
 
-                              <div className="stepper-indicator">
-                                {erections === 0 && <span className="erection-zero">Plot Only</span>}
-                                {erections > 0 && erections < 5 && (
-                                  <span className="erection-houses">
-                                    {'🏠'.repeat(erections)} ({erections}H)
-                                  </span>
-                                )}
-                                {erections === 5 && (
-                                  <span className="erection-hotel">🏨 Hotel</span>
-                                )}
-                              </div>
+                              <button
+                                type="button"
+                                className="deed-action-btn btn-trade"
+                                onClick={() => {
+                                  setTradePlayer1Id(portfolioPlayer.id);
+                                  setTradeOfferedCards1([card._id]);
+                                  setActiveModal('tradeDesk');
+                                }}
+                              >
+                                🤝 Trade
+                              </button>
+
+                              {/* Mortgage Button: Only allowed if all erections (houses/hotel) are cleared */}
+                              <button
+                                type="button"
+                                className={`deed-action-btn btn-mortgage-action ${erections > 0 ? 'btn-mortgage-locked' : ''}`}
+                                onClick={() => handleMortgageCard(card._id)}
+                                title={
+                                  erections > 0
+                                    ? `Cannot mortgage: Remove all ${erections} ${erections === 5 ? 'hotels' : 'houses'} first`
+                                    : `Mortgage ${card.name} to Bank for ₹${mortgageVal}`
+                                }
+                              >
+                                {erections > 0 ? '⚠️ Mortg. (Clear Houses)' : `🏦 Mortgage (₹${mortgageVal})`}
+                              </button>
 
                               <button
                                 type="button"
-                                className="stepper-btn"
-                                onClick={() => handleUpdateErections(card._id, 1)}
-                                disabled={erections >= 5}
+                                className="deed-action-btn btn-takeback"
+                                onClick={() => handleTakeBackCard(card._id)}
+                                title="Banker takes card back to Bank Vault"
                               >
-                                +
+                                🏦 Vault
                               </button>
                             </div>
                           </div>
-                        )}
-
-                        {/* 100% Actual Asset Breakdown + 0.9x Sell Value Indicator */}
-                        <div className="deed-asset-breakdown">
-                          <span className="actual-val-line">
-                            Actual Asset: <strong>₹{grossVal}</strong>
-                          </span>
-                          <span className="liquidation-val-line">
-                            Liquidation Payout (0.9x): <strong>₹{liquidationPayout}</strong>
-                          </span>
                         </div>
 
-                        {/* Action Buttons: SELL (0.9x) | Trade | Return to Bank */}
-                        <div className="deed-card-actions">
-                          {/* Sell Option with 0.9x Calculation */}
-                          <button
-                            type="button"
-                            className="deed-action-btn btn-sell-action"
-                            onClick={() => handleOpenPortfolioSellModal(card._id)}
-                            title="Liquidate cards and houses to Bank at 0.9x value"
+                        {/* ================= BACK SIDE (MORTGAGED FLIPPED DOWN STATE) ================= */}
+                        <div className="deed-carousel-card deed-card-face deed-card-back mortgaged-card-back">
+                          {/* Card Name in the Top Banner */}
+                          <div
+                            className="deed-card-banner mortgaged-banner"
+                            style={{ backgroundColor: bannerColor }}
                           >
-                            💰 Sell (0.9x)
-                          </button>
+                            <span className="banner-type-tag">⚠️ MORTGAGED PROPERTY</span>
+                            <h3 className="banner-card-name">{card.name}</h3>
+                          </div>
 
-                          <button
-                            type="button"
-                            className="deed-action-btn btn-trade"
-                            onClick={() => {
-                              setTradePlayer1Id(portfolioPlayer.id);
-                              setTradeOfferedCards1([card._id]);
-                              setActiveModal('tradeDesk');
-                            }}
-                          >
-                            🤝 Trade
-                          </button>
+                          {/* Mortgaged Card Content Body */}
+                          <div className="deed-card-body mortgaged-card-body">
+                            <div className="mortgaged-stamp-badge">
+                              <span className="mortgaged-stamp-icon">🔒</span>
+                              <div className="mortgaged-stamp-text">
+                                <span className="mortgaged-stamp-main">MORTGAGED</span>
+                                <span className="mortgaged-stamp-sub">The Card is Mortgaged</span>
+                              </div>
+                            </div>
 
-                          <button
-                            type="button"
-                            className="deed-action-btn btn-takeback"
-                            onClick={() => handleTakeBackCard(card._id)}
-                            title="Banker takes card back to Bank Vault"
-                          >
-                            🏦 Take Back
-                          </button>
+                            <div className="mortgaged-details-card">
+                              <div className="mortgaged-stat-row">
+                                <span className="stat-label">Mortgage Received:</span>
+                                <span className="stat-val payout-val">₹{mortgageVal}</span>
+                              </div>
+                              <div className="mortgaged-stat-row">
+                                <span className="stat-label">Rent Status:</span>
+                                <span className="stat-val rent-zero-val">₹0 (Suspended)</span>
+                              </div>
+                              <div className="mortgaged-rules-box">
+                                <p>• Card is turned face down.</p>
+                                <p>• All buildings were cleared prior to mortgage.</p>
+                                <p>• No rent can be collected while mortgaged.</p>
+                              </div>
+                            </div>
+
+                            {/* Unmortgage / Lift Mortgage Button */}
+                            <div className="mortgaged-card-actions">
+                              <button
+                                type="button"
+                                className="deed-action-btn btn-unmortgage-action"
+                                onClick={() => handleUnmortgageCard(card._id)}
+                                title={`Repay ₹${mortgageVal} to Bank to unmortgage ${card.name}`}
+                              >
+                                🔓 Lift Mortgage (Pay ₹{mortgageVal})
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>

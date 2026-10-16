@@ -46,9 +46,14 @@ export default function CardsPage({ onBackToHome }) {
     fetchProperties();
   }, []);
 
-  // Merge utilities + minted cards whenever properties change
+  // Use DB properties directly if utilities exist, or merge hardcoded utilities as fallback
   useEffect(() => {
-    setAllCards([...UTILITY_CARDS, ...properties]);
+    const hasDbUtilities = properties.some((p) => p.type === 'utility');
+    if (hasDbUtilities) {
+      setAllCards(properties);
+    } else {
+      setAllCards([...UTILITY_CARDS, ...properties]);
+    }
   }, [properties]);
 
   const fetchProperties = async () => {
@@ -224,29 +229,53 @@ export default function CardsPage({ onBackToHome }) {
   }, [dragIndex, dragOffset, hoverIndex]);
 
   // ======== CARD RENDERERS ========
-  const renderUtilityCard = (util) => (
-    <div className="card-inner utility-inner">
-      <div className="card-color-band" style={{ background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' }}>
-        <span className="card-icon">{util.icon}</span>
-        <h3 className="card-name">{util.name}</h3>
-        <span className="card-badge">UTILITY</span>
+  const renderUtilityCard = (util) => {
+    const isDbCard = util._id && !util._id.startsWith('utility-');
+    const icon = util.icon || (util.name?.toLowerCase().includes('water') ? '💧' : '⚡');
+    return (
+      <div className="card-inner utility-inner">
+        <div className="card-color-band" style={{ background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' }}>
+          {isDbCard && (
+            <div className="card-top-actions">
+              <button
+                type="button"
+                className="card-action-btn edit-btn"
+                title="Edit Card Details"
+                onClick={(e) => handleOpenEdit(util, e)}
+              >
+                ✏️
+              </button>
+              <button
+                type="button"
+                className="card-action-btn delete-btn"
+                title="Delete Card"
+                onClick={(e) => handleDelete(util._id, util.name, e)}
+              >
+                🗑️
+              </button>
+            </div>
+          )}
+          <span className="card-icon">{icon}</span>
+          <h3 className="card-name">{util.name}</h3>
+          <span className="card-badge">UTILITY</span>
+        </div>
+        <div className="card-details">
+          <div className="detail-row highlight-row">
+            <span>Buying Cost</span>
+            <span className="detail-value">₹{util.buyingCost}</span>
+          </div>
+          <div className="card-rule-box">
+            <p>If <strong>one</strong> Utility is owned, rent is <strong>4×</strong> dice amount.</p>
+            <p>If <strong>both</strong> Utilities are owned, rent is <strong>10×</strong> dice amount.</p>
+          </div>
+          <div className="detail-row mortgage-row">
+            <span>Mortgage</span>
+            <span className="detail-value">₹{util.mortgage}</span>
+          </div>
+        </div>
       </div>
-      <div className="card-details">
-        <div className="detail-row highlight-row">
-          <span>Buying Cost</span>
-          <span className="detail-value">₹{util.buyingCost}</span>
-        </div>
-        <div className="card-rule-box">
-          <p>If <strong>one</strong> Utility is owned, rent is <strong>4×</strong> dice amount.</p>
-          <p>If <strong>both</strong> Utilities are owned, rent is <strong>10×</strong> dice amount.</p>
-        </div>
-        <div className="detail-row mortgage-row">
-          <span>Mortgage</span>
-          <span className="detail-value">₹{util.mortgage}</span>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderPropertyCard = (prop) => (
     <div className="card-inner">
