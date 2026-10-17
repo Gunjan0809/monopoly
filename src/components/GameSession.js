@@ -77,6 +77,163 @@ const PLAYER_THEMES = [
 // Memory match cards icons for Lottery Type 2 (10 cards: 5 pairs)
 const MEMORY_ICONS = ['🎩', '🚗', '🐕', '🚢', '🚂', '🎩', '🚗', '🐕', '🚢', '🚂'];
 
+// Spin the Wheel prizes for Lottery Type 3 (8 prizes: 100-300 gap of 50, then -50, -100, 150)
+const WHEEL_PRIZES = [
+  { id: 0, text: '+₹100', amount: 100, color: '#10b981', secondaryColor: '#059669', textColor: '#ffffff', icon: '💰', label: 'Cash Win' },
+  { id: 1, text: '+₹150', amount: 150, color: '#0ea5e9', secondaryColor: '#0284c7', textColor: '#ffffff', icon: '💎', label: 'Diamond Win' },
+  { id: 2, text: '+₹200', amount: 200, color: '#8b5cf6', secondaryColor: '#7c3aed', textColor: '#ffffff', icon: '⭐', label: 'Star Win' },
+  { id: 3, text: '+₹250', amount: 250, color: '#f59e0b', secondaryColor: '#d97706', textColor: '#000000', icon: '👑', label: 'Royal Win' },
+  { id: 4, text: '+₹300', amount: 300, color: '#eab308', secondaryColor: '#ca8a04', textColor: '#000000', icon: '🏆', label: 'Mega Jackpot' },
+  { id: 5, text: '-₹50',  amount: -50, color: '#f43f5e', secondaryColor: '#e11d48', textColor: '#ffffff', icon: '⚠️', label: 'Tax Penalty' },
+  { id: 6, text: '-₹100', amount: -100, color: '#dc2626', secondaryColor: '#991b1b', textColor: '#ffffff', icon: '💀', label: 'Bank Fee' },
+  { id: 7, text: '+₹150', amount: 150, color: '#06b6d4', secondaryColor: '#0891b2', textColor: '#ffffff', icon: '✨', label: 'Lucky Bonus' },
+];
+
+const playWheelAudioTickSeries = () => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    const tickTimes = [0.04, 0.12, 0.22, 0.35, 0.50, 0.68, 0.88, 1.05];
+    tickTimes.forEach((t) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(800 + Math.random() * 250, now + t);
+      gain.gain.setValueAtTime(0.08, now + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + t + 0.035);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + t);
+      osc.stop(now + t + 0.04);
+    });
+  } catch (e) {}
+};
+
+const playWheelWinChime = () => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.07);
+      gain.gain.setValueAtTime(0.12, now + i * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.28);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.07);
+      osc.stop(now + i * 0.07 + 0.3);
+    });
+  } catch (e) {}
+};
+
+const playWheelLossBuzz = () => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(175, now);
+    osc.frequency.linearRampToValueAtTime(105, now + 0.24);
+    gain.gain.setValueAtTime(0.09, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  } catch (e) {}
+};
+
+const playDiceRattleAudio = () => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    [0.04, 0.14, 0.26, 0.40, 0.55, 0.70].forEach((t) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320 + Math.random() * 260, now + t);
+      gain.gain.setValueAtTime(0.08, now + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + t + 0.04);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + t);
+      osc.stop(now + t + 0.045);
+    });
+  } catch (e) {}
+};
+
+function DiceFaceSvg({ value, size = 64, isRolling = false }) {
+  const pipsMap = {
+    1: [[30, 30]],
+    2: [[18, 18], [42, 42]],
+    3: [[18, 18], [30, 30], [42, 42]],
+    4: [[18, 18], [42, 18], [18, 42], [42, 42]],
+    5: [[18, 18], [42, 18], [30, 30], [18, 42], [42, 42]],
+    6: [[18, 16], [42, 16], [18, 30], [42, 30], [18, 44], [42, 44]],
+  };
+
+  const pips = pipsMap[value] || pipsMap[1];
+
+  return (
+    <svg
+      viewBox="0 0 60 60"
+      width={size}
+      height={size}
+      className={`dice-svg-icon ${isRolling ? 'dice-rolling-shake' : ''}`}
+    >
+      <defs>
+        <linearGradient id="diceBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="70%" stopColor="#f8fafc" />
+          <stop offset="100%" stopColor="#e2e8f0" />
+        </linearGradient>
+      </defs>
+      <rect
+        x="3"
+        y="3"
+        width="54"
+        height="54"
+        rx="12"
+        fill="url(#diceBgGrad)"
+        stroke="#94a3b8"
+        strokeWidth="2"
+      />
+      <rect
+        x="5"
+        y="5"
+        width="50"
+        height="50"
+        rx="10"
+        fill="none"
+        stroke="rgba(255,255,255,0.9)"
+        strokeWidth="1.5"
+      />
+      {pips.map(([cx, cy], i) => (
+        <circle
+          key={i}
+          cx={cx}
+          cy={cy}
+          r={value === 1 ? 6 : 4.5}
+          fill={value === 1 ? '#dc2626' : '#0f172a'}
+        />
+      ))}
+    </svg>
+  );
+}
+
+
+
 function shuffleArray(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -135,7 +292,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   const [dbPastGames, setDbPastGames] = useState([]);
 
   // Lottery State
-  const [lotteryTab, setLotteryTab] = useState('type1'); // 'type1' (Banker Mystery Prize) | 'type2' (10-Card Memory Match)
+  const [lotteryTab, setLotteryTab] = useState('type1'); // 'type1' (Mystery Prize) | 'type2' (Memory Match) | 'type3' (Spin Wheel) | 'type4' (Lucky Dice)
   // Type 1: Banker Mystery Scratch / Flip
   const [type1PrizeInput, setType1PrizeInput] = useState('₹500 Cash Prize & 1 Free House');
   const [type1ActivePrize, setType1ActivePrize] = useState('₹500 Cash Prize & 1 Free House');
@@ -149,6 +306,31 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
   const [type2FlippedIndices, setType2FlippedIndices] = useState([]);
   const [type2MatchedPairs, setType2MatchedPairs] = useState([]);
   const [type2WinnerAlert, setType2WinnerAlert] = useState(null);
+
+  // Type 3: Fast Spin the Wheel (8 Prizes)
+  const [wheelPlayerIndex, setWheelPlayerIndex] = useState(0);
+  const [wheelRotation, setWheelRotation] = useState(0);
+  const [wheelIsSpinning, setWheelIsSpinning] = useState(false);
+  const [wheelSelectedPrize, setWheelSelectedPrize] = useState(null);
+  const [wheelResults, setWheelResults] = useState({}); // { [playerId]: prize }
+  const [wheelRoundComplete, setWheelRoundComplete] = useState(false);
+  const wheelAutoTimerRef = useRef(null);
+
+  // Type 4: Lucky Dice Guess (Guess 1-6, Match to win ₹300)
+  const [dicePlayerIndex, setDicePlayerIndex] = useState(0);
+  const [diceSelectedNumber, setDiceSelectedNumber] = useState(null); // 1 to 6
+  const [diceRolledValue, setDiceRolledValue] = useState(null); // 1 to 6
+  const [diceAnimValue, setDiceAnimValue] = useState(1);
+  const [diceIsRolling, setDiceIsRolling] = useState(false);
+  const [diceLastResult, setDiceLastResult] = useState(null);
+  const [diceResults, setDiceResults] = useState({}); // { [playerId]: result }
+  const [diceRoundComplete, setDiceRoundComplete] = useState(false);
+  const diceAutoTimerRef = useRef(null);
+
+  // Gold Ticket Investment System: { [playerId]: { ticketCount: number, baseValue: number, accumulatedProfit: number, currentValue: number, lastRoll: Object } }
+  const [investments, setInvestments] = useState({});
+  const [investRollingPlayerId, setInvestRollingPlayerId] = useState(null);
+  const [investAnimDice, setInvestAnimDice] = useState([1, 1]);
 
   const [toastMessage, setToastMessage] = useState(null);
   const [gameLogs, setGameLogs] = useState([
@@ -164,6 +346,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
         const parsed = JSON.parse(saved);
         if (parsed.ownership) setOwnership(parsed.ownership);
         if (parsed.loans) setLoans(parsed.loans);
+        if (parsed.investments) setInvestments(parsed.investments);
         if (parsed.activePlayerIndex !== undefined) setActivePlayerIndex(parsed.activePlayerIndex);
         if (parsed.gameLogs) setGameLogs(parsed.gameLogs);
       }
@@ -180,6 +363,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
         JSON.stringify({
           ownership,
           loans,
+          investments,
           activePlayerIndex,
           gameLogs,
         })
@@ -187,7 +371,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     } catch (e) {
       console.error('Failed to save local game state:', e);
     }
-  }, [ownership, loans, activePlayerIndex, gameLogs]);
+  }, [ownership, loans, investments, activePlayerIndex, gameLogs]);
 
   // Fetch real properties directly from MongoDB Atlas via /api/properties
   useEffect(() => {
@@ -257,6 +441,11 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
         rawTotal += landValue + (erectionCount * erectionCost);
       }
     });
+    // Add player's current Gold Ticket investment value
+    const pInv = investments[playerId];
+    if (pInv && pInv.currentValue) {
+      rawTotal += pInv.currentValue;
+    }
     return rawTotal;
   };
 
@@ -805,6 +994,357 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
     showToast(`Fresh 10-card deck ready for ${gamePlayers[nextIdx].name}!`);
   };
 
+  // Lottery Type 3: Spin the Wheel Handlers
+  const handleSpinWheel = () => {
+    if (wheelIsSpinning || wheelRoundComplete) return;
+    if (wheelAutoTimerRef.current) clearTimeout(wheelAutoTimerRef.current);
+
+    const curPlayer = gamePlayers[wheelPlayerIndex] || gamePlayers[0];
+    const targetSector = Math.floor(Math.random() * WHEEL_PRIZES.length);
+    const prize = WHEEL_PRIZES[targetSector];
+
+    const targetMidAngle = targetSector * 45 + 22.5;
+    const jitter = (Math.random() - 0.5) * 16;
+    const targetFinalAngle = (270 - targetMidAngle + jitter + 3600) % 360;
+
+    const currentAngleMod = wheelRotation % 360;
+    let angleDiff = targetFinalAngle - currentAngleMod;
+    if (angleDiff <= 0) angleDiff += 360;
+
+    // Fast 5 full rotations (1800 deg) + angleDiff
+    const nextRotation = wheelRotation + (5 * 360) + angleDiff;
+
+    setWheelIsSpinning(true);
+    setWheelSelectedPrize(null);
+    setWheelRotation(nextRotation);
+
+    playWheelAudioTickSeries();
+
+    // 1.15 seconds fast animation duration (consumes less time as requested)
+    setTimeout(() => {
+      setWheelIsSpinning(false);
+      setWheelSelectedPrize(prize);
+
+      setWheelResults((prev) => ({
+        ...prev,
+        [curPlayer.id]: prize,
+      }));
+
+      if (prize.amount > 0) {
+        setGameLogs((prev) => [
+          `🎡 LOTTERY WHEEL: ${curPlayer.name} spun and won ${prize.text} (${prize.label})!`,
+          ...prev,
+        ]);
+        showToast(`🎉 ${curPlayer.name} won ${prize.text}!`);
+        playWheelWinChime();
+      } else {
+        setGameLogs((prev) => [
+          `💸 LOTTERY WHEEL PENALTY: ${curPlayer.name} spun and got penalty ${prize.text} (${prize.label})!`,
+          ...prev,
+        ]);
+        showToast(`⚠️ ${curPlayer.name} got penalty ${prize.text}!`);
+        playWheelLossBuzz();
+      }
+
+      const isLast = wheelPlayerIndex >= gamePlayers.length - 1;
+      if (isLast) {
+        setWheelRoundComplete(true);
+      } else {
+        // Auto-refresh spin for next player after quick 2s celebration
+        wheelAutoTimerRef.current = setTimeout(() => {
+          handleAdvanceWheelPlayer(wheelPlayerIndex + 1);
+        }, 2000);
+      }
+    }, 1150);
+  };
+
+  const handleAdvanceWheelPlayer = (nextIdx) => {
+    if (wheelAutoTimerRef.current) clearTimeout(wheelAutoTimerRef.current);
+    const targetIdx = nextIdx !== undefined ? nextIdx : wheelPlayerIndex + 1;
+    if (targetIdx < gamePlayers.length) {
+      setWheelPlayerIndex(targetIdx);
+      setWheelSelectedPrize(null);
+      showToast(`Wheel refreshed & ready for ${gamePlayers[targetIdx].name}!`);
+    } else {
+      setWheelRoundComplete(true);
+    }
+  };
+
+  const handleRestartWheelRound = () => {
+    if (wheelAutoTimerRef.current) clearTimeout(wheelAutoTimerRef.current);
+    setWheelPlayerIndex(0);
+    setWheelSelectedPrize(null);
+    setWheelResults({});
+    setWheelRoundComplete(false);
+    showToast(`New Wheel Round started! Ready for ${gamePlayers[0]?.name}.`);
+  };
+
+  // Lottery Type 4: Lucky Dice Handlers (Choose 1-6, roll dice, match to win ₹300)
+  const handleRollDiceLottery = () => {
+    if (diceIsRolling || !diceSelectedNumber || diceRoundComplete) return;
+    if (diceAutoTimerRef.current) clearTimeout(diceAutoTimerRef.current);
+
+    const curPlayer = gamePlayers[dicePlayerIndex] || gamePlayers[0];
+    const finalRoll = Math.floor(Math.random() * 6) + 1; // 1 to 6
+    const isMatch = finalRoll === diceSelectedNumber;
+
+    setDiceIsRolling(true);
+    setDiceLastResult(null);
+
+    playDiceRattleAudio();
+
+    // Fast pip tumbling cycle
+    const rollInterval = setInterval(() => {
+      setDiceAnimValue(Math.floor(Math.random() * 6) + 1);
+    }, 70);
+
+    // 0.85s fast rolling animation
+    setTimeout(() => {
+      clearInterval(rollInterval);
+      setDiceIsRolling(false);
+      setDiceRolledValue(finalRoll);
+      setDiceAnimValue(finalRoll);
+
+      const result = {
+        playerId: curPlayer.id,
+        playerName: curPlayer.name,
+        chosen: diceSelectedNumber,
+        rolled: finalRoll,
+        isMatch,
+        prize: isMatch ? 300 : 0,
+      };
+
+      setDiceLastResult(result);
+      setDiceResults((prev) => ({
+        ...prev,
+        [curPlayer.id]: result,
+      }));
+
+      if (isMatch) {
+        setGameLogs((prev) => [
+          `🎲 LUCKY DICE WINNER: ${curPlayer.name} predicted ${diceSelectedNumber} and rolled ${finalRoll}! Won ₹300 Cash Prize!`,
+          ...prev,
+        ]);
+        showToast(`🎉 JACKPOT! ${curPlayer.name} guessed ${diceSelectedNumber} & won ₹300!`);
+        playWheelWinChime();
+      } else {
+        setGameLogs((prev) => [
+          `🎲 LUCKY DICE: ${curPlayer.name} chose ${diceSelectedNumber} but rolled ${finalRoll}. No prize.`,
+          ...prev,
+        ]);
+        showToast(`Missed! ${curPlayer.name} chose ${diceSelectedNumber}, rolled ${finalRoll}`);
+        playWheelLossBuzz();
+      }
+
+      const isLast = dicePlayerIndex >= gamePlayers.length - 1;
+      if (isLast) {
+        setDiceRoundComplete(true);
+      } else {
+        // Auto-refresh for next player after 2.2s celebration
+        diceAutoTimerRef.current = setTimeout(() => {
+          handleAdvanceDicePlayer(dicePlayerIndex + 1);
+        }, 2200);
+      }
+    }, 850);
+  };
+
+  const handleAdvanceDicePlayer = (nextIdx) => {
+    if (diceAutoTimerRef.current) clearTimeout(diceAutoTimerRef.current);
+    const targetIdx = nextIdx !== undefined ? nextIdx : dicePlayerIndex + 1;
+    if (targetIdx < gamePlayers.length) {
+      setDicePlayerIndex(targetIdx);
+      setDiceSelectedNumber(null);
+      setDiceRolledValue(null);
+      setDiceLastResult(null);
+      showToast(`Lucky Dice ready for ${gamePlayers[targetIdx].name}!`);
+    } else {
+      setDiceRoundComplete(true);
+    }
+  };
+
+  const handleRestartDiceRound = () => {
+    if (diceAutoTimerRef.current) clearTimeout(diceAutoTimerRef.current);
+    setDicePlayerIndex(0);
+    setDiceSelectedNumber(null);
+    setDiceRolledValue(null);
+    setDiceLastResult(null);
+    setDiceResults({});
+    setDiceRoundComplete(false);
+    showToast(`New Dice Round started! Ready for ${gamePlayers[0]?.name}.`);
+  };
+
+  // ================= GOLD TICKET INVESTMENT SYSTEM =================
+  const handleBuyGoldTicket = (playerId) => {
+    const curPlayer = gamePlayers.find((p) => p.id === playerId);
+    if (!curPlayer) return;
+
+    setInvestments((prev) => {
+      const pInv = prev[playerId] || {
+        ticketCount: 0,
+        baseValue: 0,
+        accumulatedProfit: 0,
+        currentValue: 0,
+        lastRoll: null,
+      };
+
+      const newTicketCount = (pInv.ticketCount || 0) + 1;
+      const newBaseValue = newTicketCount * 200;
+      const prevProfit = pInv.accumulatedProfit || 0;
+      const newCurrentValue = Math.max(0, newBaseValue + prevProfit);
+
+      const updated = {
+        ...pInv,
+        ticketCount: newTicketCount,
+        baseValue: newBaseValue,
+        accumulatedProfit: prevProfit,
+        currentValue: newCurrentValue,
+      };
+
+      setGameLogs((logs) => [
+        `🎟️ GOLD TICKET: ${curPlayer.name} bought 1 Gold Ticket for ₹200. Total: ${newTicketCount} Tickets, Base: ₹${newBaseValue}, Current Value: ₹${newCurrentValue}.`,
+        ...logs,
+      ]);
+      showToast(`🎟️ Bought Gold Ticket for ${curPlayer.name}! Base now ₹${newBaseValue}.`);
+
+      return {
+        ...prev,
+        [playerId]: updated,
+      };
+    });
+  };
+
+  const handleSellGoldTicket = (playerId) => {
+    const curPlayer = gamePlayers.find((p) => p.id === playerId);
+    if (!curPlayer) return;
+
+    setInvestments((prev) => {
+      const pInv = prev[playerId];
+      if (!pInv || pInv.ticketCount <= 0) return prev;
+
+      const perTicketVal = Math.round(pInv.currentValue / pInv.ticketCount);
+      const newTicketCount = pInv.ticketCount - 1;
+
+      if (newTicketCount === 0) {
+        setGameLogs((logs) => [
+          `💰 GOLD CASHOUT: ${curPlayer.name} cashed out last Gold Ticket for ₹${perTicketVal}. Investment closed.`,
+          ...logs,
+        ]);
+        showToast(`💰 ${curPlayer.name} cashed out last ticket for ₹${perTicketVal}!`);
+
+        return {
+          ...prev,
+          [playerId]: {
+            ticketCount: 0,
+            baseValue: 0,
+            accumulatedProfit: 0,
+            currentValue: 0,
+            lastRoll: null,
+          },
+        };
+      }
+
+      const newBaseValue = newTicketCount * 200;
+      const newProfit = Math.round((pInv.accumulatedProfit / pInv.ticketCount) * newTicketCount);
+      const newCurrentValue = Math.max(0, newBaseValue + newProfit);
+
+      setGameLogs((logs) => [
+        `💰 GOLD CASHOUT: ${curPlayer.name} cashed out 1 Gold Ticket for ₹${perTicketVal}. Remaining: ${newTicketCount} Tickets, Value: ₹${newCurrentValue}.`,
+        ...logs,
+      ]);
+      showToast(`💰 Cashed out 1 ticket for ₹${perTicketVal}!`);
+
+      return {
+        ...prev,
+        [playerId]: {
+          ...pInv,
+          ticketCount: newTicketCount,
+          baseValue: newBaseValue,
+          accumulatedProfit: newProfit,
+          currentValue: newCurrentValue,
+        },
+      };
+    });
+  };
+
+  const handleRollInvestmentDice = (playerId) => {
+    if (investRollingPlayerId) return;
+    const curPlayer = gamePlayers.find((p) => p.id === playerId);
+    const pInv = investments[playerId];
+    if (!curPlayer || !pInv || pInv.ticketCount <= 0) return;
+
+    // Generate final 2 dice values
+    const finalD1 = Math.floor(Math.random() * 6) + 1;
+    const finalD2 = Math.floor(Math.random() * 6) + 1;
+    const sum = finalD1 + finalD2;
+
+    // Multiplier lookup
+    let percent = 0;
+    if (sum <= 2) percent = -0.50; // -50%
+    else if (sum <= 4) percent = -0.25; // -25%
+    else if (sum <= 6) percent = -0.10; // -10%
+    else if (sum <= 9) percent = 0.25;  // +25%
+    else if (sum <= 11) percent = 0.50; // +50%
+    else percent = 1.00; // +100%
+
+    // Calculate rate change strictly on baseValue (Tickets * 200)
+    const changeAmount = Math.round(pInv.baseValue * percent);
+    const newProfit = (pInv.accumulatedProfit || 0) + changeAmount;
+    const newCurrentValue = Math.max(0, pInv.baseValue + newProfit);
+
+    setInvestRollingPlayerId(playerId);
+    playDiceRattleAudio();
+
+    // Fast 2-dice pip tumble cycle
+    const cycleInterval = setInterval(() => {
+      setInvestAnimDice([
+        Math.floor(Math.random() * 6) + 1,
+        Math.floor(Math.random() * 6) + 1,
+      ]);
+    }, 65);
+
+    // 0.85s fast roll duration
+    setTimeout(() => {
+      clearInterval(cycleInterval);
+      setInvestRollingPlayerId(null);
+      setInvestAnimDice([finalD1, finalD2]);
+
+      const lastRoll = {
+        d1: finalD1,
+        d2: finalD2,
+        sum,
+        percent,
+        changeAmount,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      setInvestments((prev) => ({
+        ...prev,
+        [playerId]: {
+          ...pInv,
+          accumulatedProfit: newProfit,
+          currentValue: newCurrentValue,
+          lastRoll,
+        },
+      }));
+
+      if (percent > 0) {
+        setGameLogs((logs) => [
+          `📈 GOLD TICKET SURGE: ${curPlayer.name} rolled 🎲${finalD1}+🎲${finalD2} = ${sum} (+${percent * 100}% on Base ₹${pInv.baseValue})! Gain: +₹${changeAmount}, New Value: ₹${newCurrentValue} 🔺!`,
+          ...logs,
+        ]);
+        showToast(`📈 🔺 ${curPlayer.name} rolled ${sum} (+${percent * 100}%)! Value: ₹${newCurrentValue}`);
+        playWheelWinChime();
+      } else {
+        setGameLogs((logs) => [
+          `📉 GOLD TICKET DROP: ${curPlayer.name} rolled 🎲${finalD1}+🎲${finalD2} = ${sum} (${percent * 100}% on Base ₹${pInv.baseValue})! Drop: -₹${Math.abs(changeAmount)}, New Value: ₹${newCurrentValue} 🔻!`,
+          ...logs,
+        ]);
+        showToast(`📉 🔻 ${curPlayer.name} rolled ${sum} (${percent * 100}%)! Value: ₹${newCurrentValue}`);
+        playWheelLossBuzz();
+      }
+    }, 850);
+  };
+
   // Big Sealed Lottery Overlay Handlers (Overlapping Player Boxes)
   const lotteryVanishTimerRef = useRef(null);
 
@@ -1050,9 +1590,26 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                     {/* Player Name Centerpiece */}
                     <div className="card-name-wrapper">
                       <h2 className="player-box-name">{player.name}</h2>
-                      <span className="card-preview-subtitle">
-                        {cardCount} Deeds • ₹{assetVal} Actual Asset
-                      </span>
+                      <div className="card-preview-sub-row">
+                        <span className="card-preview-subtitle">
+                          {cardCount} Deeds • ₹{assetVal} Actual Asset
+                        </span>
+                        {/* Gold Ticket Live Indicator */}
+                        {(() => {
+                          const pInv = investments[player.id];
+                          if (!pInv || !pInv.ticketCount) return null;
+                          const isUp = pInv.currentValue > pInv.baseValue;
+                          const isDown = pInv.currentValue < pInv.baseValue;
+                          return (
+                            <span
+                              className={`box-invest-chip ${isUp ? 'pill-up' : isDown ? 'pill-down' : 'pill-neutral'}`}
+                              title={`Base: ₹${pInv.baseValue} | Current: ₹${pInv.currentValue}`}
+                            >
+                              🎟️ {pInv.ticketCount}Tk: ₹{pInv.currentValue} {isUp ? '📈 🔺' : isDown ? '📉 🔻' : '➖'}
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </div>
 
                     {/* Tap hint footer */}
@@ -1103,6 +1660,27 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
             <div className="portfolio-navbar-actions">
               <button
                 type="button"
+                className="portfolio-nav-action-btn btn-portfolio-investment"
+                onClick={() => setActiveModal('investmentDesk')}
+                title="Open Gold Ticket Investment Desk"
+              >
+                <span>🎟️</span>
+                <span>Investment</span>
+                {(() => {
+                  const inv = investments[portfolioPlayer.id];
+                  if (!inv || !inv.ticketCount) return null;
+                  const isUp = inv.currentValue > inv.baseValue;
+                  const isDown = inv.currentValue < inv.baseValue;
+                  return (
+                    <span className={`nav-invest-pill ${isUp ? 'pill-up' : isDown ? 'pill-down' : 'pill-neutral'}`}>
+                      {inv.ticketCount}Tk {isUp ? '📈 🔺' : isDown ? '📉 🔻' : '➖'}
+                    </span>
+                  );
+                })()}
+              </button>
+
+              <button
+                type="button"
                 className="portfolio-nav-action-btn btn-add-card"
                 onClick={() => setActiveModal('addCard')}
                 title="Banker: Add Property from Database to Portfolio"
@@ -1133,7 +1711,7 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
             </div>
           </nav>
 
-          {/* MAIN SCREEN: CAROUSEL OF CARDS OWNED BY THIS PLAYER */}
+          {/* MAIN SCREEN: PORTFOLIO STAGE (HORIZONTAL CAROUSEL OF PROPERTY DEEDS) */}
           <main className="portfolio-carousel-stage">
             {loadingCards ? (
               <div className="portfolio-empty-state">
@@ -1362,6 +1940,243 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
       {toastMessage && (
         <div className="floating-toast">
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: DEDICATED GOLD TICKET INVESTMENT DESK PAGE
+          ========================================================================= */}
+      {activeModal === 'investmentDesk' && viewingPortfolioPlayerId && (
+        <div className="game-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div
+            className="game-modal-content modal-large investment-modal-page"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="modal-header investment-modal-header">
+              <div className="invest-header-left">
+                <button
+                  type="button"
+                  className="invest-modal-back-btn"
+                  onClick={() => setActiveModal(null)}
+                >
+                  ← Back to {portfolioPlayer?.name}&rsquo;s Portfolio
+                </button>
+                <div className="invest-header-titles">
+                  <h3 className="invest-modal-title">
+                    🏆 {portfolioPlayer?.name}&rsquo;s Gold Ticket Investment Desk
+                  </h3>
+                  <p className="modal-subtitle-note">
+                    Banker sells Gold Tickets for ₹200 each. Roll two virtual dice to fluctuate the rate strictly on Base Value!
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* GOLD TICKET INVESTMENT DESK CONTENT */}
+            {(() => {
+              const inv = investments[portfolioPlayer?.id] || {
+                ticketCount: 0,
+                baseValue: 0,
+                accumulatedProfit: 0,
+                currentValue: 0,
+                lastRoll: null,
+              };
+              const isUp = inv.currentValue > inv.baseValue;
+              const isDown = inv.currentValue < inv.baseValue;
+              const isRolling = investRollingPlayerId === portfolioPlayer?.id;
+              const [d1, d2] = isRolling
+                ? investAnimDice
+                : inv.lastRoll
+                ? [inv.lastRoll.d1, inv.lastRoll.d2]
+                : [1, 1];
+
+              return (
+                <div className="portfolio-gold-investment-card in-modal">
+                  {/* Card Header with Shimmer & Trend Badge */}
+                  <div className="invest-card-header">
+                    <div className="invest-card-titles">
+                      <div className="invest-ribbon">
+                        <span className="invest-ribbon-trophy">🏆</span>
+                        <span className="invest-ribbon-text">GOLD TICKET INVESTMENT</span>
+                        <span className="invest-rate-badge">₹200 Base Price</span>
+                      </div>
+                      <h4 className="invest-portfolio-heading">
+                        Market Position: {portfolioPlayer?.name}
+                      </h4>
+                    </div>
+
+                    {/* Bar Up / Bar Down Trend Badge */}
+                    <div className={`invest-trend-badge ${isUp ? 'trend-up' : isDown ? 'trend-down' : 'trend-even'}`}>
+                      <span className="trend-bar-icon">
+                        {isUp ? '📈 🔺' : isDown ? '📉 🔻' : '➖'}
+                      </span>
+                      <div className="trend-bar-text">
+                        <span className="trend-bar-status">
+                          {isUp ? 'BAR UP (RATE HIKE)' : isDown ? 'BAR DOWN (REGRESSION)' : 'BASE VALUE RATE'}
+                        </span>
+                        <span className="trend-bar-diff">
+                          {isUp ? `+₹${inv.accumulatedProfit} Profit` : isDown ? `-₹${Math.abs(inv.accumulatedProfit)} Loss` : '₹0 Change'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Financial Metrics Grid */}
+                  <div className="invest-stats-grid">
+                    <div className="invest-stat-box">
+                      <span className="stat-label">Tickets Owned</span>
+                      <strong className="stat-val stat-tickets">
+                        🎟️ {inv.ticketCount} {inv.ticketCount === 1 ? 'Ticket' : 'Tickets'}
+                      </strong>
+                    </div>
+
+                    <div className="invest-stat-box">
+                      <span className="stat-label">Base Value ({inv.ticketCount} × ₹200)</span>
+                      <strong className="stat-val stat-base">
+                        ₹{inv.baseValue}
+                      </strong>
+                    </div>
+
+                    <div className="invest-stat-box highlight-box">
+                      <span className="stat-label">Current Total Value</span>
+                      <strong className={`stat-val stat-current ${isUp ? 'text-profit' : isDown ? 'text-loss' : ''}`}>
+                        ₹{inv.currentValue}
+                      </strong>
+                    </div>
+
+                    <div className="invest-stat-box">
+                      <span className="stat-label">Total Gain / Loss</span>
+                      <strong className={`stat-val ${isUp ? 'text-profit' : isDown ? 'text-loss' : 'text-neutral'}`}>
+                        {isUp ? `+₹${inv.accumulatedProfit}` : isDown ? `-₹${Math.abs(inv.accumulatedProfit)}` : '₹0'}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* Base Value Non-Compounding Notice */}
+                  <div className="invest-base-rule-note">
+                    <span className="note-bulb">💡</span>
+                    <span className="note-text">
+                      <strong>Base Value Rule:</strong> All rate hikes and drops apply strictly to <strong>Base ₹{inv.baseValue}</strong>, preserving past profit/loss without compounding.
+                    </span>
+                  </div>
+
+                  {/* 2-Dice Market Fluctuation Roller */}
+                  <div className="invest-dice-stage">
+                    <div className="dice-roller-header">
+                      <div className="roller-title-group">
+                        <span className="roller-title">🎲 2-Dice Market Fluctuation</span>
+                        <span className="roller-sub">Roll two virtual dice to determine rate hike or regression</span>
+                      </div>
+                      {inv.lastRoll && (
+                        <div className="last-roll-badge">
+                          <span>Last Roll:</span>
+                          <strong>
+                            🎲{inv.lastRoll.d1} + 🎲{inv.lastRoll.d2} = {inv.lastRoll.sum} ({inv.lastRoll.percent > 0 ? '+' : ''}{Math.round(inv.lastRoll.percent * 100)}%)
+                          </strong>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="invest-dice-arena">
+                      <div className={`two-dice-wrapper ${isRolling ? 'is-rolling-dice' : ''}`}>
+                        <div className="single-dice-box">
+                          <DiceFaceSvg value={d1} size={54} isRolling={isRolling} />
+                          <span className="dice-sub-label">Die 1</span>
+                        </div>
+                        <span className="dice-plus-symbol">+</span>
+                        <div className="single-dice-box">
+                          <DiceFaceSvg value={d2} size={54} isRolling={isRolling} />
+                          <span className="dice-sub-label">Die 2</span>
+                        </div>
+                        <span className="dice-equals-symbol">=</span>
+                        <div className="dice-sum-bubble">
+                          <span className="sum-label">SUM</span>
+                          <strong className="sum-num">{d1 + d2}</strong>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className={`btn-roll-invest-dice ${isRolling ? 'rolling' : ''}`}
+                        disabled={inv.ticketCount === 0 || isRolling}
+                        onClick={() => handleRollInvestmentDice(portfolioPlayer?.id)}
+                      >
+                        {isRolling ? (
+                          <>
+                            <span className="rolling-icon-anim">🎲</span>
+                            <span>ROLLING 2 DICE...</span>
+                          </>
+                        ) : inv.ticketCount === 0 ? (
+                          <span>BUY A GOLD TICKET BELOW TO ROLL</span>
+                        ) : (
+                          <>
+                            <span>🎲</span>
+                            <span>ROLL 2 DICE FOR {portfolioPlayer?.name?.toUpperCase()}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Probability / Multiplier Legend Chips */}
+                    <div className="invest-payout-cheatsheet">
+                      <div className="payout-chip chip-severe-loss" title="Snake Eyes: Rate drops by 50%">
+                        <span>Sum ≤2: -50% 🔻</span>
+                      </div>
+                      <div className="payout-chip chip-loss" title="Rate drops by 25%">
+                        <span>3-4: -25% 🔻</span>
+                      </div>
+                      <div className="payout-chip chip-loss-light" title="Rate drops by 10%">
+                        <span>5-6: -10% 🔻</span>
+                      </div>
+                      <div className="payout-chip chip-gain-light" title="Rate increases by 25%">
+                        <span>7-9: +25% 🔺</span>
+                      </div>
+                      <div className="payout-chip chip-gain" title="Rate surges by 50%">
+                        <span>10-11: +50% 🔺</span>
+                      </div>
+                      <div className="payout-chip chip-jackpot" title="Boxcars: Rate doubles (+100%)">
+                        <span>12: +100% (2x) 👑</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Banker Ticket Purchase & Cashout Actions */}
+                  <div className="invest-banker-actions">
+                    <button
+                      type="button"
+                      className="btn-buy-gold-ticket"
+                      onClick={() => handleBuyGoldTicket(portfolioPlayer?.id)}
+                      disabled={isRolling}
+                    >
+                      <span>➕</span>
+                      <span>Buy 1 Gold Ticket (₹200)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn-sell-gold-ticket"
+                      onClick={() => handleSellGoldTicket(portfolioPlayer?.id)}
+                      disabled={inv.ticketCount === 0 || isRolling}
+                      title={inv.ticketCount > 0 ? `Cash out 1 ticket for ₹${Math.round(inv.currentValue / inv.ticketCount)}` : 'No tickets to cash out'}
+                    >
+                      <span>💰</span>
+                      <span>
+                        Cash Out 1 Ticket ({inv.ticketCount > 0 ? `₹${Math.round(inv.currentValue / inv.ticketCount)}` : '₹0'})
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         </div>
       )}
 
@@ -1897,6 +2712,20 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                   >
                     🃏 Type 2: 10-Card Memory Match (₹500 Prize)
                   </button>
+                  <button
+                    type="button"
+                    className={`lottery-tab-btn ${lotteryTab === 'type3' ? 'active' : ''}`}
+                    onClick={() => setLotteryTab('type3')}
+                  >
+                    🎡 Type 3: Spin the Wheel (8 Prizes)
+                  </button>
+                  <button
+                    type="button"
+                    className={`lottery-tab-btn ${lotteryTab === 'type4' ? 'active' : ''}`}
+                    onClick={() => setLotteryTab('type4')}
+                  >
+                    🎲 Type 4: Lucky Dice Guess (Win ₹300)
+                  </button>
                 </div>
               </div>
               <button
@@ -2068,6 +2897,609 @@ export default function GameSession({ players, onBackToHome, onRestartSetup }) {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* LOTTERY TYPE 3: FAST SPIN THE WHEEL (8 PRIZES) */}
+            {lotteryTab === 'type3' && (
+              <div className="lottery-type3-container">
+                {/* Turn & Player Status Banner */}
+                <div className="type3-turn-banner">
+                  <div className="type3-player-info">
+                    <span className="type3-player-token">
+                      {gamePlayers[wheelPlayerIndex]?.token?.icon || '👤'}
+                    </span>
+                    <div>
+                      <div className="type3-turn-badge-row">
+                        <h4 className="type3-player-heading">
+                          {gamePlayers[wheelPlayerIndex]?.name}&rsquo;s Turn
+                        </h4>
+                        <span className="type3-turn-step-pill">
+                          Player {wheelPlayerIndex + 1} of {gamePlayers.length}
+                        </span>
+                        {wheelRoundComplete && (
+                          <span className="type3-round-done-pill">Round Complete ✓</span>
+                        )}
+                      </div>
+                      <p className="type3-player-sub">
+                        {wheelIsSpinning
+                          ? '⚡ Fast spinning the wheel...'
+                          : wheelSelectedPrize
+                          ? `Landed on ${wheelSelectedPrize.text}! Refreshes for next player...`
+                          : 'Tap SPIN THE WHEEL below to win or penalty!'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {!wheelRoundComplete && wheelPlayerIndex < gamePlayers.length - 1 && (
+                    <button
+                      type="button"
+                      className="type3-advance-btn"
+                      disabled={wheelIsSpinning}
+                      onClick={() => handleAdvanceWheelPlayer(wheelPlayerIndex + 1)}
+                      title="Advance to next player chance"
+                    >
+                      Next Player ➔
+                    </button>
+                  )}
+
+                  {wheelRoundComplete && (
+                    <button
+                      type="button"
+                      className="type3-restart-round-btn"
+                      onClick={handleRestartWheelRound}
+                    >
+                      🔄 New Round
+                    </button>
+                  )}
+                </div>
+
+                {/* All Players Mini-Queue Bar */}
+                <div className="type3-players-queue">
+                  {gamePlayers.map((p, idx) => {
+                    const pResult = wheelResults[p.id];
+                    const isCurrent = idx === wheelPlayerIndex && !wheelRoundComplete;
+                    const hasSpun = !!pResult;
+
+                    return (
+                      <button
+                        key={p.id || idx}
+                        type="button"
+                        className={`type3-queue-pill ${isCurrent ? 'queue-current' : ''} ${hasSpun ? 'queue-spun' : ''}`}
+                        onClick={() => {
+                          if (!wheelIsSpinning) {
+                            if (wheelAutoTimerRef.current) clearTimeout(wheelAutoTimerRef.current);
+                            setWheelPlayerIndex(idx);
+                            setWheelSelectedPrize(pResult || null);
+                          }
+                        }}
+                      >
+                        <span className="queue-pill-token">{p.token?.icon || '👤'}</span>
+                        <span className="queue-pill-name">{p.name}</span>
+                        {hasSpun ? (
+                          <span className={`queue-pill-score ${pResult.amount > 0 ? 'score-win' : 'score-loss'}`}>
+                            {pResult.text}
+                          </span>
+                        ) : isCurrent ? (
+                          <span className="queue-pill-badge">Spins Now</span>
+                        ) : (
+                          <span className="queue-pill-pending">Pending</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Wheel Stage */}
+                <div className="type3-wheel-stage">
+                  {/* Top Fixed Pointer Arrow */}
+                  <div className="wheel-pointer-marker">
+                    <div className="pointer-arrow" />
+                    <div className="pointer-gem" />
+                  </div>
+
+                  {/* Spinning SVG Disc */}
+                  <div
+                    className={`wheel-disc-wrapper ${wheelIsSpinning ? 'is-spinning' : ''}`}
+                    style={{
+                      transform: `rotate(${wheelRotation}deg)`,
+                      transition: wheelIsSpinning
+                        ? 'transform 1.15s cubic-bezier(0.15, 0.85, 0.35, 1.0)'
+                        : 'none',
+                    }}
+                    onClick={handleSpinWheel}
+                  >
+                    <svg viewBox="0 0 320 320" className="wheel-svg" width="100%" height="100%">
+                      <defs>
+                        {WHEEL_PRIZES.map((prize, idx) => (
+                          <linearGradient
+                            id={`sectorGrad-${idx}`}
+                            key={idx}
+                            x1="0%"
+                            y1="0%"
+                            x2="100%"
+                            y2="100%"
+                          >
+                            <stop offset="0%" stopColor={prize.color} />
+                            <stop offset="100%" stopColor={prize.secondaryColor} />
+                          </linearGradient>
+                        ))}
+                        <linearGradient id="goldRimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#fef08a" />
+                          <stop offset="35%" stopColor="#f59e0b" />
+                          <stop offset="70%" stopColor="#d97706" />
+                          <stop offset="100%" stopColor="#92400e" />
+                        </linearGradient>
+                        <radialGradient id="hubGrad" cx="50%" cy="50%" r="50%">
+                          <stop offset="0%" stopColor="#1e293b" />
+                          <stop offset="70%" stopColor="#0f172a" />
+                          <stop offset="100%" stopColor="#020617" />
+                        </radialGradient>
+                      </defs>
+
+                      {/* Slices */}
+                      {WHEEL_PRIZES.map((prize, idx) => {
+                        const a0 = idx * 45;
+                        const a1 = (idx + 1) * 45;
+                        const rad0 = (a0 * Math.PI) / 180;
+                        const rad1 = (a1 * Math.PI) / 180;
+                        const cx = 160;
+                        const cy = 160;
+                        const r = 146;
+                        const x0 = cx + r * Math.cos(rad0);
+                        const y0 = cy + r * Math.sin(rad0);
+                        const x1 = cx + r * Math.cos(rad1);
+                        const y1 = cy + r * Math.sin(rad1);
+                        const midAngle = idx * 45 + 22.5;
+
+                        return (
+                          <g key={prize.id} className="wheel-sector-group">
+                            <path
+                              d={`M ${cx} ${cy} L ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`}
+                              fill={`url(#sectorGrad-${idx})`}
+                              stroke="rgba(255, 255, 255, 0.22)"
+                              strokeWidth="1.5"
+                            />
+                            <g transform={`rotate(${midAngle}, ${cx}, ${cy})`}>
+                              <text
+                                x={cx + 62}
+                                y={cy}
+                                fontSize="15"
+                                textAnchor="middle"
+                                dominantBaseline="central"
+                                transform={`rotate(90, ${cx + 62}, ${cy})`}
+                              >
+                                {prize.icon}
+                              </text>
+                              <text
+                                x={cx + 104}
+                                y={cy}
+                                fill={prize.textColor}
+                                fontSize="12.5"
+                                fontWeight="900"
+                                fontFamily="'Outfit', sans-serif"
+                                textAnchor="middle"
+                                dominantBaseline="central"
+                                transform={`rotate(90, ${cx + 104}, ${cy})`}
+                                style={{
+                                  filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.85))',
+                                  letterSpacing: '0.2px',
+                                }}
+                              >
+                                {prize.text}
+                              </text>
+                            </g>
+                          </g>
+                        );
+                      })}
+
+                      {/* Outer Gold Rim with 16 Studs */}
+                      <circle cx="160" cy="160" r="153" fill="none" stroke="url(#goldRimGrad)" strokeWidth="8" />
+                      <circle cx="160" cy="160" r="157" fill="none" stroke="#000000" strokeWidth="1.5" />
+                      <circle cx="160" cy="160" r="147" fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="1.5" />
+
+                      {Array.from({ length: 16 }).map((_, i) => {
+                        const ang = (i * 22.5 * Math.PI) / 180;
+                        const sx = 160 + 153 * Math.cos(ang);
+                        const sy = 160 + 153 * Math.sin(ang);
+                        return (
+                          <circle
+                            key={i}
+                            cx={sx}
+                            cy={sy}
+                            r="2.5"
+                            fill="#ffffff"
+                            stroke="#ca8a04"
+                            strokeWidth="1"
+                          />
+                        );
+                      })}
+
+                      {/* Center Hub */}
+                      <circle cx="160" cy="160" r="32" fill="url(#hubGrad)" stroke="url(#goldRimGrad)" strokeWidth="3" />
+                      <circle cx="160" cy="160" r="23" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" strokeDasharray="3 3" />
+                      <text
+                        x="160"
+                        y="155"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fontSize="17"
+                      >
+                        🎡
+                      </text>
+                      <text
+                        x="160"
+                        y="171"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fill="#fbbf24"
+                        fontSize="8.5"
+                        fontWeight="900"
+                        fontFamily="'Outfit', sans-serif"
+                        letterSpacing="1px"
+                      >
+                        SPIN
+                      </text>
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Wheel Bottom Actions / Results */}
+                <div className="type3-action-area">
+                  {/* Active Win / Loss Alert */}
+                  {wheelSelectedPrize && (
+                    <div
+                      className={`type3-result-card ${wheelSelectedPrize.amount > 0 ? 'card-win' : 'card-loss'}`}
+                    >
+                      <div className="result-card-inner">
+                        <span className="result-card-icon">{wheelSelectedPrize.icon}</span>
+                        <div className="result-card-text">
+                          <span className="result-congrats">
+                            {wheelSelectedPrize.amount > 0 ? '🎉 WINNER!' : '⚠️ PENALTY!'}
+                          </span>
+                          <strong className="result-amount">
+                            {gamePlayers[wheelPlayerIndex]?.name}: {wheelSelectedPrize.text} ({wheelSelectedPrize.label})
+                          </strong>
+                        </div>
+                      </div>
+                      {!wheelRoundComplete && wheelPlayerIndex < gamePlayers.length - 1 && (
+                        <button
+                          type="button"
+                          className="result-next-btn"
+                          onClick={() => handleAdvanceWheelPlayer(wheelPlayerIndex + 1)}
+                        >
+                          Next: {gamePlayers[wheelPlayerIndex + 1]?.name} ➔
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Main Spin CTA Button */}
+                  {!wheelRoundComplete ? (
+                    <button
+                      type="button"
+                      className={`type3-spin-btn ${wheelIsSpinning ? 'spinning' : ''}`}
+                      disabled={wheelIsSpinning}
+                      onClick={handleSpinWheel}
+                    >
+                      {wheelIsSpinning ? (
+                        <>
+                          <span className="btn-spinner-icon">🌀</span>
+                          <span>FAST SPINNING...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>⚡</span>
+                          <span>SPIN THE WHEEL ({gamePlayers[wheelPlayerIndex]?.name})</span>
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    /* Round Completed Summary */
+                    <div className="type3-round-summary-card">
+                      <div className="summary-card-header">
+                        <h4>🏆 Wheel Round Summary</h4>
+                        <span>All {gamePlayers.length} players have completed their spin!</span>
+                      </div>
+                      <div className="summary-results-grid">
+                        {gamePlayers.map((p) => {
+                          const res = wheelResults[p.id];
+                          return (
+                            <div key={p.id} className="summary-player-chip">
+                              <span className="summary-token">{p.token?.icon || '👤'}</span>
+                              <span className="summary-name">{p.name}</span>
+                              <strong className={`summary-prize ${res?.amount > 0 ? 'text-win' : 'text-loss'}`}>
+                                {res ? res.text : 'No spin'}
+                              </strong>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        className="type3-restart-full-btn"
+                        onClick={handleRestartWheelRound}
+                      >
+                        🔄 START NEW WHEEL ROUND (Refresh All Spins)
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Prizes Quick Reference Bar */}
+                  <div className="type3-prizes-legend">
+                    <span className="legend-title">8 Wheel Slices:</span>
+                    <div className="legend-chips-wrap">
+                      {WHEEL_PRIZES.map((pz) => (
+                        <span
+                          key={pz.id}
+                          className={`legend-chip ${pz.amount > 0 ? 'chip-positive' : 'chip-negative'}`}
+                          style={{ borderColor: pz.color }}
+                        >
+                          {pz.icon} {pz.text}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* LOTTERY TYPE 4: LUCKY DICE GUESS (CHOOSE 1-6, MATCH TO WIN ₹300) */}
+            {lotteryTab === 'type4' && (
+              <div className="lottery-type4-container">
+                {/* Turn & Player Status Banner */}
+                <div className="type4-turn-banner">
+                  <div className="type4-player-info">
+                    <span className="type4-player-token">
+                      {gamePlayers[dicePlayerIndex]?.token?.icon || '👤'}
+                    </span>
+                    <div>
+                      <div className="type4-turn-badge-row">
+                        <h4 className="type4-player-heading">
+                          {gamePlayers[dicePlayerIndex]?.name}&rsquo;s Turn
+                        </h4>
+                        <span className="type4-turn-step-pill">
+                          Player {dicePlayerIndex + 1} of {gamePlayers.length}
+                        </span>
+                        {diceRoundComplete && (
+                          <span className="type4-round-done-pill">Round Complete ✓</span>
+                        )}
+                      </div>
+                      <p className="type4-player-sub">
+                        {diceIsRolling
+                          ? '🎲 Tumbling and rolling the dice...'
+                          : diceLastResult
+                          ? diceLastResult.isMatch
+                            ? `🎉 MATCH! Rolled ${diceLastResult.rolled} and won ₹300!`
+                            : `❌ Rolled ${diceLastResult.rolled} (chose ${diceLastResult.chosen}). Refreshes turn...`
+                          : diceSelectedNumber
+                          ? `Selected #${diceSelectedNumber}. Ready to roll the dice!`
+                          : 'Step 1: Pick your lucky number (1 - 6) below:'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {!diceRoundComplete && dicePlayerIndex < gamePlayers.length - 1 && (
+                    <button
+                      type="button"
+                      className="type4-advance-btn"
+                      disabled={diceIsRolling}
+                      onClick={() => handleAdvanceDicePlayer(dicePlayerIndex + 1)}
+                      title="Advance to next player chance"
+                    >
+                      Next Player ➔
+                    </button>
+                  )}
+
+                  {diceRoundComplete && (
+                    <button
+                      type="button"
+                      className="type4-restart-round-btn"
+                      onClick={handleRestartDiceRound}
+                    >
+                      🔄 New Dice Round
+                    </button>
+                  )}
+                </div>
+
+                {/* All Players Mini-Queue Bar */}
+                <div className="type4-players-queue">
+                  {gamePlayers.map((p, idx) => {
+                    const pResult = diceResults[p.id];
+                    const isCurrent = idx === dicePlayerIndex && !diceRoundComplete;
+                    const hasRolled = !!pResult;
+
+                    return (
+                      <button
+                        key={p.id || idx}
+                        type="button"
+                        className={`type4-queue-pill ${isCurrent ? 'queue-current' : ''} ${hasRolled ? (pResult.isMatch ? 'queue-won' : 'queue-miss') : ''}`}
+                        onClick={() => {
+                          if (!diceIsRolling) {
+                            if (diceAutoTimerRef.current) clearTimeout(diceAutoTimerRef.current);
+                            setDicePlayerIndex(idx);
+                            setDiceSelectedNumber(pResult?.chosen || null);
+                            setDiceRolledValue(pResult?.rolled || null);
+                            setDiceLastResult(pResult || null);
+                          }
+                        }}
+                      >
+                        <span className="queue-pill-token">{p.token?.icon || '👤'}</span>
+                        <span className="queue-pill-name">{p.name}</span>
+                        {hasRolled ? (
+                          <span className={`queue-pill-score ${pResult.isMatch ? 'score-win' : 'score-loss'}`}>
+                            {pResult.isMatch ? 'Won ₹300 🏆' : `Rolled ${pResult.rolled}`}
+                          </span>
+                        ) : isCurrent ? (
+                          <span className="queue-pill-badge">Choosing</span>
+                        ) : (
+                          <span className="queue-pill-pending">Pending</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Step 1: Choose Number Grid (1 to 6) */}
+                <div className="type4-choose-section">
+                  <div className="type4-section-header">
+                    <span className="choose-step-num">STEP 1</span>
+                    <span className="choose-step-label">
+                      Choose a number from <strong>1 to 6</strong>:
+                    </span>
+                  </div>
+
+                  <div className="type4-numbers-grid">
+                    {[1, 2, 3, 4, 5, 6].map((num) => {
+                      const isSelected = diceSelectedNumber === num;
+                      const isMatchingResult = diceLastResult && diceLastResult.rolled === num;
+
+                      return (
+                        <button
+                          key={num}
+                          type="button"
+                          className={`type4-num-btn ${isSelected ? 'selected' : ''} ${isMatchingResult && diceLastResult.isMatch ? 'matched-glow' : ''}`}
+                          disabled={diceIsRolling || (!!diceLastResult && !diceRoundComplete)}
+                          onClick={() => {
+                            if (!diceIsRolling && !diceLastResult) {
+                              setDiceSelectedNumber(num);
+                            }
+                          }}
+                        >
+                          <DiceFaceSvg value={num} size={42} />
+                          <span className="type4-num-val">{num}</span>
+                          {isSelected && <span className="type4-chosen-tag">Selected</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Step 2: Animated Rolling Dice Arena */}
+                <div className="type4-dice-arena">
+                  <div className="type4-arena-inner">
+                    <div className={`dice-cube-container ${diceIsRolling ? 'rolling' : ''}`}>
+                      <DiceFaceSvg
+                        value={diceIsRolling ? diceAnimValue : (diceRolledValue || diceSelectedNumber || 1)}
+                        size={84}
+                        isRolling={diceIsRolling}
+                      />
+                    </div>
+
+                    <div className="type4-arena-details">
+                      <div className="type4-arena-badge-row">
+                        <span className="arena-prize-badge">Prize: ₹300 Cash</span>
+                        <span className="arena-odds-badge">1 in 6 Chance</span>
+                      </div>
+                      <div className="type4-prediction-summary">
+                        {diceSelectedNumber ? (
+                          <span>
+                            {gamePlayers[dicePlayerIndex]?.name} predicted: <strong className="text-highlight">#{diceSelectedNumber}</strong>
+                          </span>
+                        ) : (
+                          <span className="text-muted">Tap a number (1-6) above to pick!</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 3: Action Button & Match Result Card */}
+                <div className="type4-actions-area">
+                  {/* Result Announcement Alert */}
+                  {diceLastResult && (
+                    <div
+                      className={`type4-result-card ${diceLastResult.isMatch ? 'card-win' : 'card-loss'}`}
+                    >
+                      <div className="result-card-inner">
+                        <span className="result-card-icon">
+                          {diceLastResult.isMatch ? '🎉' : '❌'}
+                        </span>
+                        <div className="result-card-text">
+                          <span className="result-congrats">
+                            {diceLastResult.isMatch ? 'JACKPOT MATCH WINNER!' : 'NO MATCH'}
+                          </span>
+                          <strong className="result-amount">
+                            {diceLastResult.isMatch
+                              ? `${diceLastResult.playerName} matched #${diceLastResult.rolled} and WON ₹300!`
+                              : `${diceLastResult.playerName} chose #${diceLastResult.chosen}, but dice rolled #${diceLastResult.rolled}.`}
+                          </strong>
+                        </div>
+                      </div>
+                      {!diceRoundComplete && dicePlayerIndex < gamePlayers.length - 1 && (
+                        <button
+                          type="button"
+                          className="result-next-btn"
+                          onClick={() => handleAdvanceDicePlayer(dicePlayerIndex + 1)}
+                        >
+                          Next: {gamePlayers[dicePlayerIndex + 1]?.name} ➔
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Main Roll Dice Button */}
+                  {!diceRoundComplete ? (
+                    <button
+                      type="button"
+                      className={`type4-roll-btn ${diceIsRolling ? 'rolling' : ''} ${!diceSelectedNumber ? 'btn-disabled' : ''}`}
+                      disabled={diceIsRolling || !diceSelectedNumber || !!diceLastResult}
+                      onClick={handleRollDiceLottery}
+                    >
+                      {diceIsRolling ? (
+                        <>
+                          <span className="btn-spinner-icon">🎲</span>
+                          <span>ROLLING THE DICE...</span>
+                        </>
+                      ) : diceLastResult ? (
+                        <span>✓ TURN COMPLETED</span>
+                      ) : diceSelectedNumber ? (
+                        <>
+                          <span>🎲</span>
+                          <span>ROLL DICE FOR #{diceSelectedNumber} ({gamePlayers[dicePlayerIndex]?.name})</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>👆</span>
+                          <span>SELECT 1 - 6 ABOVE TO ROLL</span>
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    /* Round Completed Summary */
+                    <div className="type4-round-summary-card">
+                      <div className="summary-card-header">
+                        <h4>🏆 Lucky Dice Round Summary</h4>
+                        <span>All {gamePlayers.length} players have guessed and rolled!</span>
+                      </div>
+                      <div className="summary-results-grid">
+                        {gamePlayers.map((p) => {
+                          const res = diceResults[p.id];
+                          return (
+                            <div key={p.id} className="summary-player-chip">
+                              <span className="summary-token">{p.token?.icon || '👤'}</span>
+                              <span className="summary-name">{p.name}</span>
+                              {res ? (
+                                <strong className={`summary-prize ${res.isMatch ? 'text-win' : 'text-loss'}`}>
+                                  {res.isMatch ? 'Won ₹300 🏆' : `Chose ${res.chosen}, Rolled ${res.rolled}`}
+                                </strong>
+                              ) : (
+                                <span className="text-muted">No roll</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        className="type4-restart-full-btn"
+                        onClick={handleRestartDiceRound}
+                      >
+                        🔄 START NEW DICE ROUND (Refresh All Rolls)
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
