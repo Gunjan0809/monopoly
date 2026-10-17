@@ -569,12 +569,14 @@ html, body {
   flex: 1;
   min-height: 0;
   width: 100%;
+  height: calc(100% - 60px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 8px 14px 20px;
   overflow: hidden;
   box-sizing: border-box;
+  position: relative;
 }
 
 .deeds-carousel-track {
@@ -584,23 +586,28 @@ html, body {
   justify-content: flex-start;
   gap: 16px;
   width: 100%;
-  min-height: 310px;
+  height: 100%;
+  max-height: 520px;
+  min-height: 330px;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
-  padding: 10px 10px;
+  padding: 10px 18px;
+  box-sizing: border-box;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 .deed-carousel-card-container {
-  flex: 0 0 250px;
-  width: 250px;
-  height: min(88%, 435px);
+  flex: 0 0 260px;
+  width: 260px;
+  height: clamp(340px, 94%, 445px);
+  min-height: 320px;
   scroll-snap-align: center;
   perspective: 1200px;
   border-radius: 18px;
   transition: transform 0.25s ease;
+  position: relative;
 }
 
 .deed-carousel-card-container:hover {
@@ -640,6 +647,12 @@ html, body {
   background: #f8fafc;
   color: #0f172a;
   transform: rotateX(0deg);
+  z-index: 2;
+}
+
+.deed-carousel-card-container.is-mortgaged .deed-card-front {
+  z-index: 1;
+  pointer-events: none;
 }
 
 .deed-carousel-card {
@@ -876,6 +889,13 @@ html, body {
   transform: rotateX(180deg);
   border: 2px solid #ef4444;
   box-shadow: 0 20px 50px rgba(239, 68, 68, 0.25), 0 16px 40px rgba(0, 0, 0, 0.8);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.deed-carousel-card-container.is-mortgaged .deed-card-back.mortgaged-card-back {
+  z-index: 3;
+  pointer-events: auto;
 }
 
 .mortgaged-banner {
@@ -4632,17 +4652,26 @@ html, body {
   .portfolio-carousel-stage {
     padding: 4px 8px !important;
     height: calc(100dvh - 42px) !important;
+    min-height: 0 !important;
   }
 
   .deeds-carousel-track {
     gap: 10px !important;
-    padding: 4px 6px !important;
+    padding: 4px 10px !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  .deed-carousel-card-container {
+    flex: 0 0 clamp(200px, 25vw, 245px) !important;
+    width: clamp(200px, 25vw, 245px) !important;
+    height: clamp(270px, calc(100dvh - 52px), 430px) !important;
+    min-height: 250px !important;
+    border-radius: 14px !important;
   }
 
   .deed-carousel-card {
-    flex: 0 0 clamp(190px, 25vw, 225px) !important;
-    width: clamp(190px, 25vw, 225px) !important;
-    height: min(92%, 285px) !important;
     border-radius: 14px !important;
   }
 
